@@ -9,7 +9,7 @@ A gui or console application will be created to read from that websocket and man
 
 ## Installation (Ubuntu LTS 24.04)
 
-First install the flirc binaries (flirc_util, irtools) from https://flirc.com/ubuntu-software-installation-guide copying them into `/usr/local/bin` except for the appimage, the daemon uses `flirc_util` to check if the device is connected and to kik the device from bootloader when its power is interrupted.
+First install the flirc binaries (flirc_util, irtools) from https://flirc.com/ubuntu-software-installation-guide copying them into `/usr/local/bin` except for the appimage, the daemon uses `flirc_util` to check if the device is connected and to kick the device from bootloader when its power is interrupted.
 
 Some extra packages are required to make it work (some packages have been renamed but its detected by apt)
 ```shell
@@ -21,7 +21,7 @@ First, clone this repository
 ```shell
 cd /tmp
 git clone git@github.com:ngsoft/Harmony2404.git harmony
-sudo mv harmony /tmp
+sudo mv harmony /opt
 sudo chown -R $USER:$USER /opt/harmony
 cd /opt/harmony
 rm -rf .git
@@ -31,9 +31,13 @@ git add .
 git commit -m ":tada: first commit"
 ```
 
-Then install the Lirc suite
+Then install the Lirc suite and disable their daemons (we use a custom binary of [inputlirc](https://github.com/gsliepen/inputlirc) to capture the virtual keyboard) and irexec to read from the socket and write to the pipe
+
+InputLirc source code is located at [lib/harmony/dist/inputlirc](./lib/harmony/dist/inputlirc)
+
+
 ```shell
-sudo apt install lirc lirc-x xdotool install libcanberra-gtk-module libcanberra-gtk3-module evemu-tools
+sudo apt install lirc lirc-x xdotool libcanberra-gtk-module libcanberra-gtk3-module evemu-tools
 for act in stop disable mask; do sudo systemctl $act lircd-setup; done
 for act in stop disable mask; do sudo systemctl $act lircd-uinput; done
 for act in stop disable mask; do sudo systemctl $act lircdm; done
