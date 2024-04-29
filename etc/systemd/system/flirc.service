@@ -1,0 +1,12 @@
+[Unit]
+Description=FLIRC Manager
+After=network.target
+
+[Service]
+Type=simple
+Environment="HARMONY_APPLICATION_PREFIX=/opt/harmony"
+ExecStart=/opt/harmony/sbin/flircd
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target
