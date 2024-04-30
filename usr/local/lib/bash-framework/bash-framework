@@ -1,0 +1,71 @@
+#!/bin/bash
+
+if ! (return 0 2>/dev/null); then
+    echo "Cannot execute bash-framework, you must source it." >&2
+    exit 1
+fi
+
+# Executes given command
+# and hides output
+function script.exec() {
+    [ -n "$1" ] || return 1
+    local _cmd
+    while [ -n "$1" ]; do
+        [ -z "$_cmd" ] || _cmd+=' '
+        if [[ "$1" =~ [\ ]+ ]]; then _cmd+='"'$1'"'; else _cmd+=$1; fi
+        shift
+    done
+    eval $_cmd &>>/dev/null
+}
+
+# script.whereami [file]
+function script.whereami() {
+    [ -z "$1" ] && return 1
+    dirname "$(realpath "$1")"
+}
+
+# script.loadenv [dir]
+function script.loadenv() {
+    [ -d "$1" ] || return 1
+
+    local _loaded _dir _file
+    _dir="$(realpath "$1")"
+    if test -d "$_dir"; then
+        for _loaded in "${_ENV_LOADED[@]}"; do
+            test "$_loaded" == "$_dir" && return 0
+        done
+        _file="${_dir}/env.bash"
+        if test -e "$_file"; then
+            . "$_file"
+            _ENV_LOADED[${#_ENV_LOADED[@]}]="$_dir"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+#Find file in $INCLUDE_PATH:$PATH
+script.find() {
+    [ -z "$1" ] && return 1
+    local _dir
+
+    for _dir in $(splitpath "$INCLUDE_PATH:$PATH"); do
+        if [ -e "$_dir/$1" ]; then
+            echo "${_dir}/$1"
+            return 0
+        fi
+    done
+    return 1
+}
+
+_ROOT="$(script.whereami "${BASH_SOURCE[0]}")"
+_ENV_LOADED=()
+
+if ! script.loadenv "$_ROOT"; then
+    echo "Cannot load bash-framework environment." >&2
+    exit 1
+fi
+
+. "${_ROOT}/functions.bash"
+
+require new is array process

@@ -1,16 +1,16 @@
 #!/bin/bash
-# Detects if flirc device is connected and 
+# Detects if flirc device is connected and
 # launch LIRC, and write to pipe
 
 [[ $(pgrep -c flircd) -gt 1 ]] && exit 0
 
-function throw(){
+function throw() {
     echo $@ >&2
     exit 1
 }
 
 if [ "$(id -u)" != "0" ]; then throw "This script can only be run by root user"; fi
-if [ -z "$HARMONY_APPLICATION_PREFIX" ]; then 
+if [ -z "$HARMONY_APPLICATION_PREFIX" ]; then
     cwd="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
     base=$(basename ${BASH_SOURCE[0]})
     if [ -z "$cwd" ] || [ ! -x "$cwd/$base" ]; then throw $error; fi
@@ -18,12 +18,10 @@ if [ -z "$HARMONY_APPLICATION_PREFIX" ]; then
     unset -v base cwd
 else HARMONY_FLIRCD_SYSTEMD=1; fi
 
-
 [ -e "$HARMONY_APPLICATION_PREFIX/lib/harmony/env.sh" ] || throw "Cannot load Environment"
 
 source "$HARMONY_APPLICATION_PREFIX/lib/harmony/env.sh"
 source bash-utils.sh
-
 
 if [ ! -d "$HARMONY_FLIRC_PATH" ]; then mkdir -m 775 -p $HARMONY_FLIRC_PATH; fi
 
@@ -40,9 +38,9 @@ function.copy log oldlog
 #   6 — Informational: informational messages
 #   7 — Debug: debug-level messages
 
-function log(){
+function log() {
     local message="$@"
-    if [[ $HARMONY_FLIRCD_SYSTEMD == 1 ]]; then  echo "<7> $message"; fi
+    if [[ $HARMONY_FLIRCD_SYSTEMD == 1 ]]; then echo "<7> $message"; fi
     oldlog $message
 }
 
@@ -54,26 +52,29 @@ new Process InputLIRC inputlircd
 new Process IREXEC irexec
 
 # adding method to InputLIRC instance
-function InputLIRC.start(){
+function InputLIRC.start() {
     InputLIRC.running && return 1
     log "Starting InputLIRC."
-    > /dev/null 2>&1 $HARMONY_APPLICATION_PREFIX/sbin/inputlircd -r 300 -m 0 -t $HARMONY_FLIRC_KEYMAPS -n *flirc* -x FLIRC -d /var/run/lirc/lircd -g -c &
+    $HARMONY_APPLICATION_PREFIX/sbin/inputlircd >/dev/null 2>&1 -r 300 -m 0 -t $HARMONY_FLIRC_KEYMAPS -n *flirc* -x FLIRC -d /var/run/lirc/lircd -g -c &
     if InputLIRC.wait.running; then
         chown -R root:sudo /var/run/lirc
         cmd chmod -R 775 /var/run/lirc
         if InputLIRC.running; then
             log "InputLIRC Start Success"
             return 0
-        else log "InputLIRC start failure"; return 1; fi
+        else
+            log "InputLIRC start failure"
+            return 1
+        fi
     fi
 }
 
 # adding method to IREXEC instance
-function IREXEC.start(){
+function IREXEC.start() {
     IREXEC.running && return 1
     InputLIRC.running || return 1
     log Starting IREXEC
-    if [ ! -p "$HARMONY_FLIRC_FIFO" ]; then 
+    if [ ! -p "$HARMONY_FLIRC_FIFO" ]; then
         mkfifo "$HARMONY_FLIRC_FIFO"
         chown -R root:sudo $HARMONY_FLIRC_PATH
         cmd chmod -R 775 $HARMONY_FLIRC_PATH
@@ -82,7 +83,7 @@ function IREXEC.start(){
     if [ ! -e "$HARMONY_FLIRCD_IREXEC" ]; then
         parse.configfile $HARMONY_FLIRC_KEYMAPS irexeckeys
         for key in "${irexeckeys[@]}"; do
-cat >> $HARMONY_FLIRCD_IREXEC <<EOF
+            cat >>$HARMONY_FLIRCD_IREXEC <<EOF
 begin
     prog    =  harmony
     remote  =  FLIRC
@@ -99,12 +100,14 @@ EOF
         if IREXEC.running; then
             log "IREXEC Start Success"
             return 0
-        else log "IREXEC start failure"; return 1;fi
+        else
+            log "IREXEC start failure"
+            return 1
+        fi
     fi
 }
 
-
-function cleanup(){
+function cleanup() {
     cmd killall irexec
     cmd killall lircd
     cmd killall inputlircd
@@ -113,22 +116,18 @@ function cleanup(){
     cmd rm -f $HARMONY_FLIRC_FIFO
 }
 
-
-do.kill(){
+do.kill() {
     exit 0
 }
 
-do.exit(){
+do.exit() {
     cleanup
     log "Stopping FLIRC Daemon"
     return 0
 }
 
-
 trap do.exit EXIT
 trap do.kill SIGINT SIGTERM SIGQUIT
-
-
 
 require flirc
 flirc_load_config=0
@@ -142,7 +141,7 @@ logged=0
 
 cleanup
 
-echo $BASHPID > $HARMONY_FLIRCD_PIDFILE
+echo $BASHPID >$HARMONY_FLIRCD_PIDFILE
 HARMONY_FLIRCD_PID=$BASHPID
 
 log "Starting FLIRC Daemon."
@@ -150,7 +149,7 @@ log "Starting FLIRC Daemon."
 while [[ $canloop == 1 ]]; do
     if [[ $loop == $timeout ]] || [[ $canstart == 1 ]]; then
         if ! flirc.connected; then
-            if [ "$(flirc.status)" == "bootloader" ]; then 
+            if [ "$(flirc.status)" == "bootloader" ]; then
                 log "Flirc on bootloader, fixing dfu."
                 flirc.fixdfu
                 flirc_load_config=1
@@ -162,20 +161,20 @@ while [[ $canloop == 1 ]]; do
                 source $HARMONY_FLIRC_CONFIG
                 flirc_load_config=0
             fi
-            ! InputLIRC.running && InputLIRC.start        
+            ! InputLIRC.running && InputLIRC.start
             if InputLIRC.running; then
                 if ! IREXEC.running; then IREXEC.start; fi
             fi
             logged=0
         else
-            [[ $logged == 0 ]] && log "Device is disconnected";
-            if IREXEC.running; then 
+            [[ $logged == 0 ]] && log "Device is disconnected"
+            if IREXEC.running; then
                 log "Device is disconnected, stopping IREXEC"
-                IREXEC.kill; 
+                IREXEC.kill
             fi
-            if InputLIRC.running; then 
+            if InputLIRC.running; then
                 log "Device is disconnected, stopping InputLIRC"
-                InputLIRC.kill; 
+                InputLIRC.kill
             fi
             logged=1
         fi
@@ -184,5 +183,5 @@ while [[ $canloop == 1 ]]; do
         continue
     fi
     sleep $interval
-    ((loop+=1))
+    ((loop += 1))
 done

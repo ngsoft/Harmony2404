@@ -1,0 +1,166 @@
+#!/bin/bash
+# Detects if flirc device is connected
+
+[[ $(pgrep -c flircd) -gt 1 ]] && exit 0
+[ "$(id -u)" != "0" ] && exit 126
+
+# Get CWD
+APP_NAME="flircd"
+FLIRC_ROOT="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
+FLIRC_PREFIX="$(dirname "$(dirname "$FLIRC_ROOT")")"
+FLIRC_LIB="$FLIRC_ROOT/lib/$APP_NAME"
+FLIRC_CFG="$FLIRC_PREFIX/etc/$APP_NAME"
+FLIRC_RUN="/var/run/$APP_NAME"
+FLIRC_PIDFILE="$FLIRC_RUN/${APP_NAME}.pid"
+LOGFILE="/var/log/${APP_NAME}.log"
+INPUTLIRC_CFG_FILE="$FLIRC_CFG/inputlirc.conf"
+FLIRC_CFG_FILE="${FLIRC_CFG}/flirc.conf"
+
+if [ -d "$FLIRC_LIB" ]; then
+    INCLUDE_PATH="$FLIRC_LIB"
+fi
+
+# Loads bash-framework
+[ -e "$FLIRC_ROOT/lib/bash-framework/bash-framework" ] || throw "bash-framework location not found."
+source "$FLIRC_ROOT/lib/bash-framework/bash-framework"
+
+# Systemd Log override
+function.copy log _log
+
+# < https://blog.selectel.com/managing-logging-systemd/ >
+# loglevels
+#   0 — Emergency: system is unusable
+#   1 — Alert: action must be taken immediately
+#   2 — Critical: critical conditions
+#   3 — Error: error conditions
+#   4 — Warning: warning conditions
+#   5 — Notice: normal but significant condition
+#   6 — Informational: informational messages
+#   7 — Debug: debug-level messages
+
+function log() {
+    local message="$@"
+    if [ "$FLIRC_SYSTEMD" == "1" ]; then echo "<7> $message"; fi
+    _log $message
+}
+
+function throw() {
+    if [ -n "$1" ]; then
+        log "ERR: $@"
+        if [ "$FLIRC_SYSTEMD" != "1" ]; then echo "$@" >&2; fi
+    fi
+    exit $COMMAND_CANNOT_EXECUTE
+}
+
+require daemon flirc mkservice
+
+# InputLirc Daemon management
+new Daemon InputLirc inputlircd
+
+# Load InputLirc Config
+[ -f "$INPUTLIRC_CFG_FILE" ] || throw "${INPUTLIRC_CFG_FILE} does not exists."
+source "$INPUTLIRC_CFG_FILE"
+InputLirc[options]="-r $repeat -m $minimum_keycode -t $keymap_translations -n $device_name -x $remote_name -d $socket $extra"
+unset -v repeat minimum_keycode keymap_translations device_name socket remote_name extra
+
+# Start wait for inputlircd to be loaded
+InputLirc.start() {
+    InputLirc.running && return $COMMAND_SUCCESS
+    log "INFO: Starting InputLIRC"
+    @ "${FLIRC_ROOT}/bin/${InputLirc[process]}" ${InputLirc[options]}
+    if InputLirc.wait; then
+        log "INFO: Setting permissions on $FLIRC_RUN"
+        @ chown -R root:sudo "$FLIRC_RUN"
+        @ chmod -R 755 "$FLIRC_RUN"
+        if InputLirc.running; then
+            log "INFO: InputLIRC start success"
+            return $COMMAND_SUCCESS
+        fi
+    fi
+    log "ERR: InputLIRC start failure"
+    return $COMMAND_FAILURE
+}
+
+# Traps
+function cleanup() {
+    InputLirc.kill
+    @ rm -rf "$FLIRC_PIDFILE"
+}
+
+function do.kill() {
+    exit $COMMAND_SUCCESS
+}
+
+function do.exit() {
+    cleanup
+    log "INFO: Stopping ${APP_NAME}"
+    return $COMMAND_SUCCESS
+}
+
+trap do.exit EXIT
+trap do.kill SIGINT SIGTERM SIGQUIT
+
+function do.main() {
+    # Runtime Variables
+    local flirc_load_config canloop loop interval timeout canstart logged
+    flirc_load_config=0
+    canloop=1
+    loop=0
+    interval=.2
+    timeout=25
+    firstloop=1
+    logged=0
+    # Start loop
+    log "INFO: Starting ${APP_NAME}"
+
+    while [[ $canloop == 1 ]]; do
+        if [[ $loop == $timeout ]] || [[ $firstloop == 1 ]]; then
+
+            if ! flirc.connected && [ "$(flirc.status)" == "bootloader" ]; then
+                log "INFO: Flirc device on bootloader, fixing dfu"
+                flirc.dfu
+                flirc_load_config=1
+            fi
+            if flirc.connected; then
+                if [[ $flirc_load_config == 1 ]]; then
+                    flirc_load_config=0
+                    log "INFO: loading flirc config $FLIRC_CFG_FILE"
+                    source "$FLIRC_CFG_FILE"
+                fi
+                if [[ $logged == 1 ]] || [[ $firstloop == 1 ]]; then
+                    log "INFO: Flirc device is connected"
+                    logged=0
+                fi
+                InputLirc.start
+            else
+                if [[ $logged == 0 ]]; then
+                    log "INFO: Flirc device is disconnected"
+                    logged=1
+                fi
+                if InputLirc.running; then
+                    log "INFO: stopping InputLIRC"
+                    InputLirc.kill
+                fi
+            fi
+            firstloop=0
+            loop=0
+            continue
+        fi
+        sleep $interval
+        ((loop += 1))
+    done
+
+}
+
+# create run dir
+if [ ! -d "$FLIRC_RUN" ]; then
+    @ mkdir -p "$FLIRC_RUN"
+fi
+
+# Cleaning up last instance
+cleanup
+
+# Set pidfile
+echo $BASHPID >"$FLIRC_PIDFILE"
+
+do.main
