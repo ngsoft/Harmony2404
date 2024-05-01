@@ -37,11 +37,16 @@ func (h *Handler) handleWebSocket() {
 			h.error("cannot read ws message: %v", err)
 			return
 		}
-		if err = h.handleEvent(msg); err != nil {
-			h.error("cannot handle message: %v", err)
-			return
-		}
+		go func() {
+			if err = h.handleEvent(msg); err != nil {
+				h.error("cannot handle message: %v", err)
+				return
+			}
+		}()
+
 	}
+
+	// h.handleEvent("start")
 }
 
 func (h *Handler) handleUnixSocket() error {
@@ -101,12 +106,12 @@ func (h *Handler) processMessage(message string) (SocketMessage, error) {
 }
 
 func (h *Handler) handleMessage(mess SocketMessage) error {
-	// h.Mutex.Lock()
-	// defer h.Mutex.Unlock()
+
 	if mess.Remote != h.Remote {
 		h.info("received unmanaged packet from remote `%v`, managed => `%v`", mess.Remote, h.Remote)
 		return nil
 	}
+	h.log(mess.Message)
 	return h.writeJson([]interface{}{
 		fmt.Sprintf("0x%s", mess.Code),
 		mess.Key,
