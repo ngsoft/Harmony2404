@@ -66,15 +66,17 @@ unset -v repeat minimum_keycode keymap_translations device_name socket remote_na
 
 # Start wait for inputlircd to be loaded
 InputLirc.start() {
-    local __dir
+    local socket = "${InputLirc[socket]}"
     InputLirc.running && return $COMMAND_SUCCESS
     log "INFO: Starting InputLIRC"
     @ "${FLIRC_ROOT}/bin/${InputLirc[process]}" ${InputLirc[options]}
     if InputLirc.wait; then
-        __dir="$(dirname "${InputLirc[socket]}")"
-        log "INFO: Setting permissions on $__dir"
-        @ chown -R root:sudo "$__dir"
-        @ chmod -R 755 "$__dir"
+        if [ "$socket" != "" ]; then
+            log "INFO: Setting permissions on $socket"
+            @ chown root:sudo "$socket"
+            # @ chmod -R 755 "$__dir"
+        fi
+
         if InputLirc.running; then
             log "INFO: InputLIRC start success"
             return $COMMAND_SUCCESS
