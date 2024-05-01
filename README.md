@@ -60,3 +60,12 @@ To read from the pipe from the command line, run this command, then press a butt
 ```shell
 if read input<"/var/run/flirc/flirc.pipe"; then echo $input; fi
 ```
+
+### To read from the socket
+```shell
+sudo apt install netcat-traditional
+```
+
+```shell
+nc -U /var/run/lirc/lircd
+```
