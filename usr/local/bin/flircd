@@ -10,7 +10,7 @@ FLIRC_ROOT="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
 FLIRC_PREFIX="$(dirname "$(dirname "$FLIRC_ROOT")")"
 FLIRC_LIB="$FLIRC_ROOT/lib/$APP_NAME"
 FLIRC_CFG="$FLIRC_PREFIX/etc/$APP_NAME"
-FLIRC_RUN="/var/run/$APP_NAME"
+FLIRC_RUN="/var/run"
 FLIRC_PIDFILE="$FLIRC_RUN/${APP_NAME}.pid"
 LOGFILE="/var/log/${APP_NAME}.log"
 INPUTLIRC_CFG_FILE="$FLIRC_CFG/inputlirc.conf"
@@ -61,17 +61,20 @@ new Daemon InputLirc inputlircd
 [ -f "$INPUTLIRC_CFG_FILE" ] || throw "${INPUTLIRC_CFG_FILE} does not exists."
 source "$INPUTLIRC_CFG_FILE"
 InputLirc[options]="-r $repeat -m $minimum_keycode -t $keymap_translations -n $device_name -x $remote_name -d $socket $extra"
+InputLirc[socket]="$socket"
 unset -v repeat minimum_keycode keymap_translations device_name socket remote_name extra
 
 # Start wait for inputlircd to be loaded
 InputLirc.start() {
+    local __dir
     InputLirc.running && return $COMMAND_SUCCESS
     log "INFO: Starting InputLIRC"
     @ "${FLIRC_ROOT}/bin/${InputLirc[process]}" ${InputLirc[options]}
     if InputLirc.wait; then
-        log "INFO: Setting permissions on $FLIRC_RUN"
-        @ chown -R root:sudo "$FLIRC_RUN"
-        @ chmod -R 755 "$FLIRC_RUN"
+        __dir="$(dirname "${InputLirc[socket]}")"
+        log "INFO: Setting permissions on $__dir"
+        @ chown -R root:sudo "$__dir"
+        @ chmod -R 755 "$__dir"
         if InputLirc.running; then
             log "INFO: InputLIRC start success"
             return $COMMAND_SUCCESS
@@ -151,11 +154,6 @@ function do.main() {
     done
 
 }
-
-# create run dir
-if [ ! -d "$FLIRC_RUN" ]; then
-    @ mkdir -p "$FLIRC_RUN"
-fi
 
 # Cleaning up last instance
 cleanup
