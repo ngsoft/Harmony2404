@@ -12,5 +12,5 @@ func main() {
 		log.Printf("ERR: Invalid socket file  %v", *socket)
 		os.Exit(1)
 	}
-
+	newHandler().Start()
 }

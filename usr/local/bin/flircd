@@ -72,9 +72,8 @@ InputLirc.start() {
     @ "${FLIRC_ROOT}/bin/${InputLirc[process]}" ${InputLirc[options]}
     if InputLirc.wait; then
         if [ "$socket" != "" ]; then
-            log "INFO: Setting permissions on $socket"
+            log "INFO: Setting permissions on $socket (make sudoers able to read on socket)"
             @ chown root:sudo "$socket"
-            # @ chmod -R 755 "$__dir"
         fi
 
         if InputLirc.running; then
