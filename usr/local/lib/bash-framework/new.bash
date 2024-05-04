@@ -170,11 +170,11 @@ function Class {
     self.destroy() {
         local method var
         unset -v self
-        for method in $(compgen -A function self); do
+        for method in $(compgen -A function self.); do
             unset -f "${method}"
         done
 
-        for var in $(compgen -A variable self); do
+        for var in $(compgen -A variable self_); do
             unset -v "${var}"
         done
     }
@@ -186,17 +186,32 @@ function Class {
         local _res _params _method
         _params="$(declare -p self)"
         echo "class ${self_instance} (#self) {"
+        echo ""
+        echo " properties: {"
+        for _res in $(compgen -A variable self); do
+            # detect self and self_
+            if [ "$_res" == "self" ] || [ "${_res#self_}" != "$_res" ]; then
+                # do not show self_file/self_instance
+                if [ "$_res" != "${_res%_file}" ] || [ "$_res" != "${_res%_instance}" ]; then
+                    continue
+                fi
+                _params="$(declare -p "$_res")"
+                echo "   ${_params#*-[a-zA-Z-] }"
+            fi
 
-        echo "  properties: ${_params#*=}"
-
-        for _res in $(compgen -A function self); do
-            _method="$(declare -F "$_res")"
-            echo "  ${_method}()"
         done
-        # for _res in $(compgen -A variable self); do
-        #     declare -p "$_res"
-        # done
+        echo " }"
+        echo ""
+        echo " methods: {"
+        for _res in $(compgen -A function self); do
+            # detect point and magic/private methods
+            if [ "${_res}" == "${_res#self.}" ] || [ "${_res}" != "${_res#self.__}" ]; then continue; fi
 
+            # _method="$(declare -F "$_res")"
+            echo "   ${_res}()"
+        done
+        echo " }"
+        echo ""
         echo }
     }
 

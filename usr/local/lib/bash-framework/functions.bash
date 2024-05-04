@@ -17,14 +17,23 @@ COMMAND_NOT_FOUND=127
 # Log a message into a declared $LOGFILE
 # log <message>
 function log() {
+
+	local _line
+	if [ -n "$1" ]; then
+		_line="$(date "+%Y-%m-%d %H:%M:%S") | $@"
+	fi
+
 	[ -n "$LOGFILE" ] || return
 	if [ ! -e "$LOGFILE" ]; then
 		local _dir="$(dirname "$LOGFILE")"
 		[ -d "$_dir " ] || mkdir -p "$_dir" 2>/dev/null
 		touch "$LOGFILE" 2>/dev/null || return
 	fi
-	if [ -n "$1" ]; then
-		echo "$(date "+%Y-%m-%d %H:%M") | $@" >>"$LOGFILE" 2>&1
+	if [ "$LOGVERBOSE" == "1" ] || [ "$LOGVERBOSE" == "true" ]; then
+		echo "$_line" 2>&1
+	fi
+	if [ -n "$_line" ]; then
+		echo "$_line" >>"$LOGFILE" 2>&1
 	fi
 }
 

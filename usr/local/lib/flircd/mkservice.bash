@@ -6,13 +6,13 @@ if [ ! -e "$unit" ]; then
 
     cat >"$unit" <<EOL
 [Unit]
-Description=FLIRC Manager
+Description=${APP_DESC}
 After=network.target
 
 [Service]
 Type=simple
 Environment="FLIRC_SYSTEMD=1"
-ExecStart=${FLIRC_PREFIX}/usr/local/bin/flircd
+ExecStart=${FLIRC_PREFIX}/usr/local/bin/${APP_NAME}
 KillSignal=SIGTERM
 
 [Install]

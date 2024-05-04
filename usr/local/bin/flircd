@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 # Detects if flirc device is connected
 
 [[ $(pgrep -c flircd) -gt 1 ]] && exit 0
@@ -6,13 +6,14 @@
 
 # Get CWD
 APP_NAME="flircd"
+APP_DESC="FLIRC Manager"
 FLIRC_ROOT="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
 FLIRC_PREFIX="$(dirname "$(dirname "$FLIRC_ROOT")")"
 FLIRC_LIB="$FLIRC_ROOT/lib/$APP_NAME"
 FLIRC_CFG="$FLIRC_PREFIX/etc/$APP_NAME"
 FLIRC_RUN="/var/run"
 FLIRC_PIDFILE="$FLIRC_RUN/${APP_NAME}.pid"
-LOGFILE="/var/log/${APP_NAME}.log"
+export LOGFILE="/var/log/${APP_NAME}.log"
 INPUTLIRC_CFG_FILE="$FLIRC_CFG/inputlirc.conf"
 FLIRC_CFG_FILE="${FLIRC_CFG}/flirc.conf"
 
@@ -23,6 +24,16 @@ fi
 # Loads bash-framework
 [ -e "$FLIRC_ROOT/lib/bash-framework/bash-framework" ] || throw "bash-framework location not found."
 source "$FLIRC_ROOT/lib/bash-framework/bash-framework"
+
+# app usage
+function do.usage() {
+    echo $APP_DESC
+    echo "usage: ${APP_NAME} [...options]"
+    echo "  -v  --verbose  be verbose"
+    echo "  -d  --daemon   force systemd detection"
+    echo "  -h  --help     this help"
+    exit 0
+}
 
 # Systemd Log override
 function.copy log _log
@@ -52,6 +63,32 @@ function throw() {
     exit $COMMAND_CANNOT_EXECUTE
 }
 
+# parse cmd line arguments
+if VALID_ARGS=$(getopt -o vdh --long verbose,daemon,help -- "$@" 2>/dev/null); then
+    eval set -- "$VALID_ARGS"
+    while [ : ]; do
+        case "$1" in
+        -v | --verbose)
+            shift
+            LOGVERBOSE=true
+            ;;
+        -d | --daemon)
+            shift
+            export FLIRC_SYSTEMD=1
+            ;;
+        -h | --help)
+            shift
+            do.usage
+            ;;
+        --)
+            shift
+            break
+            ;;
+        esac
+    done
+
+else do.usage; fi
+
 require daemon flirc mkservice
 
 # InputLirc Daemon management
@@ -66,18 +103,18 @@ unset -v repeat minimum_keycode keymap_translations device_name socket remote_na
 
 # Start wait for inputlircd to be loaded
 InputLirc.start() {
-    local socket="${InputLirc[socket]}"
+    local _pid socket="${InputLirc[socket]}"
     InputLirc.running && return $COMMAND_SUCCESS
     log "INFO: Starting InputLIRC"
     @ "${FLIRC_ROOT}/bin/${InputLirc[process]}" ${InputLirc[options]}
     if InputLirc.wait; then
-        if [ "$socket" != "" ]; then
-            log "INFO: Setting permissions on $socket (make sudoers able to read on socket)"
-            @ chown root:sudo "$socket"
-        fi
-
-        if InputLirc.running; then
-            log "INFO: InputLIRC start success"
+        _pid="$(InputLirc.pid)"
+        if [ "$_pid" != "" ]; then
+            log "INFO: InputLIRC start success pid: $_pid"
+            if [ "$socket" != "" ]; then
+                log "INFO: Setting permissions root:sudo on $socket"
+                @ chown root:sudo "$socket"
+            fi
             return $COMMAND_SUCCESS
         fi
     fi
@@ -87,7 +124,13 @@ InputLirc.start() {
 
 # Traps
 function cleanup() {
-    InputLirc.kill
+    if InputLirc.running; then
+        log "INFO: stopping InputLIRC pid: $(InputLirc.pid)"
+        InputLirc.kill
+        log "INFO: stopping flirc capture"
+        flirc.capture false
+    fi
+
     @ rm -rf "$FLIRC_PIDFILE"
 }
 
@@ -106,7 +149,7 @@ trap do.kill SIGINT SIGTERM SIGQUIT
 
 function do.main() {
     # Runtime Variables
-    local flirc_load_config canloop loop interval timeout canstart logged
+    local flirc_load_config canloop loop interval timeout canstart logged capture
     flirc_load_config=0
     canloop=1
     loop=0
@@ -114,6 +157,8 @@ function do.main() {
     timeout=25
     firstloop=1
     logged=0
+    capture=0
+
     # Start loop
     log "INFO: Starting ${APP_NAME}"
 
@@ -135,16 +180,22 @@ function do.main() {
                     log "INFO: Flirc device is connected"
                     logged=0
                 fi
-                InputLirc.start
+                if InputLirc.start && [[ $capture == 0 ]]; then
+                    if flirc.capture; then
+                        capture=1
+                    fi
+                fi
             else
                 if [[ $logged == 0 ]]; then
                     log "INFO: Flirc device is disconnected"
                     logged=1
                 fi
                 if InputLirc.running; then
-                    log "INFO: stopping InputLIRC"
+                    log "INFO: stopping InputLIRC pid: $(InputLirc.pid)"
                     InputLirc.kill
                 fi
+                # no need to disable capture there as device id does not exists anymore
+                capture=0
             fi
             firstloop=0
             loop=0

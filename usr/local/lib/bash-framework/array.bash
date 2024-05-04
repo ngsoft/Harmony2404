@@ -12,11 +12,23 @@ function array.exists() {
     [[ "$(declare -p "$1" 2>/dev/null)" =~ declare[^-]-[aA] ]]
 }
 
-# chreate new empty array
+# create new empty array
 # array.create <name>
 function array.create() {
     [ -n "$1" ] || return $COMMAND_FAILURE
     eval "declare -g -A ${1}=()"
+}
+
+# create new indexed empty array
+# array.create.list <name> [...entries]
+function array.create.list() {
+    [ -n "$1" ] || return $COMMAND_FAILURE
+    local _name=${1}
+    shift
+    eval "declare -g -a ${_name}=()"
+    if [ -n "$1" ]; then
+        array.push ${_name} $@
+    fi
 }
 
 # array.count <name>
@@ -82,7 +94,7 @@ function array.push() {
     array.exists "$1" || return $COMMAND_FAILURE
     [ -n "$2" ] || return $COMMAND_FAILURE
 
-    local _old _new _key
+    local _old _new _key _index
     declare -n _old="$1"
     _new=()
 
@@ -92,8 +104,10 @@ function array.push() {
             unset "_old[$_key]"
         fi
     done
+    _index="${#_new[@]}"
     until [ -z "$2" ]; do
         _new[${#_new[@]}]="$2"
+        ((_index += 1))
         shift
     done
     for _key in "${!_new[@]}"; do
@@ -104,7 +118,7 @@ function array.push() {
 }
 
 # array.unshift <name> [...values]
-array_unshift() {
+array.unshift() {
 
     array.exists "$1" || return $COMMAND_FAILURE
     [ -n "$2" ] || return $COMMAND_FAILURE
