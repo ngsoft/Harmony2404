@@ -10,10 +10,9 @@ const (
 	allEvents      EventType = "all"
 	SIGNAL_EVENT   EventType = "signal"
 	SHUTDOWN_EVENT EventType = "shutdown"
-	EXIT_EVENT     EventType = "exit"
 )
 
-type EventDetacher func()
+type EventDisabler func()
 
 type Event struct {
 	Type   EventType
@@ -23,10 +22,6 @@ type Event struct {
 
 func (h *Event) StopPropagation() {
 	h.Status = STATUS_OFF
-}
-
-func (h *Event) IsActive() bool {
-	return h.On()
 }
 
 type EventHandler interface {
@@ -45,7 +40,7 @@ func (h *EventListener) __init() {
 	}
 }
 
-func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) EventDetacher {
+func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) EventDisabler {
 	h.__init()
 	uid := GenerateUid()
 
@@ -54,6 +49,10 @@ func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) EventDet
 	}
 
 	for _, t := range v {
+
+		if _, ok := h.handlers[uid]; !ok {
+			h.handlers[uid] = make(map[EventType]EventHandler)
+		}
 		h.handlers[uid][t] = e
 	}
 
@@ -63,7 +62,7 @@ func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) EventDet
 }
 
 func (h *EventListener) DispatchEvent(e EventType, p ...interface{}) bool {
-	if !h.init || len(h.handlers) > 0 {
+	if !h.init || len(h.handlers) == 0 {
 		return false
 	}
 	var (
@@ -76,7 +75,7 @@ func (h *EventListener) DispatchEvent(e EventType, p ...interface{}) bool {
 	)
 
 	for _, m := range h.handlers {
-		if !ev.IsActive() {
+		if !ev.On() {
 			break
 		}
 		if c, ok := m[allEvents]; ok {

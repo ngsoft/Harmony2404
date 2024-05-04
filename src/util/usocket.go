@@ -11,11 +11,13 @@ type UnixSocketHandler interface {
 }
 
 type UnixSocket struct {
-	Status  Status
+	Status
 	Path    string
 	conn    net.Conn
 	handler UnixSocketHandler
 	ReadWriteLock
+	EventListener
+	Logger
 }
 
 func NewUnixSocket(path string, handler UnixSocketHandler) (*UnixSocket, bool) {
@@ -36,28 +38,40 @@ func NewUnixSocket(path string, handler UnixSocketHandler) (*UnixSocket, bool) {
 		conn:    c,
 		Path:    path,
 		handler: handler,
+		Logger:  NewLogger(fmt.Sprintf("[%s]", path)),
 	}
 	GlobalEvents.AddEventHandler(&socket, SHUTDOWN_EVENT)
+
+	if s, ok := handler.(EventHandler); ok {
+		socket.AddEventHandler(s)
+	}
+
 	return &socket, true
 }
 func (h *UnixSocket) HandleEvent(ev *Event) {
 	switch ev.Type {
 	case SHUTDOWN_EVENT:
+		h.Info("received shutdown event, closing connection")
 		h.Close()
 	}
 }
 
 func (h *UnixSocket) Close() {
-	if h.Status.On() {
+
+	if h.On() {
+		h.Status = STATUS_OFF
+		h.Info("Closing Connection")
 		_ = h.conn.Close()
+		h.Info("Connection closed")
+		h.DispatchEvent(CONNECTION_CLOSE, h.Path)
 	}
-	h.Status = STATUS_OFF
+
 }
 
-func (h *UnixSocket) HandleConnection(handler UnixSocketHandler) {
-	if h.Status.On() {
+func (h *UnixSocket) HandleConnection() {
+	if h.On() {
 		defer h.Close()
-		handler.HandleUnixSocket(h)
+		h.handler.HandleUnixSocket(h)
 	}
 
 }
@@ -66,11 +80,11 @@ func (h *UnixSocket) ReadMessage() (string, bool) {
 	var (
 		l     int
 		msg   string
-		input []byte = make([]byte, 1024)
-		err   error  = fmt.Errorf("")
+		input = make([]byte, 1024)
+		err   = fmt.Errorf("")
 	)
 
-	if h.Status.On() {
+	if h.On() {
 		h.ReadLock.Lock()
 		defer h.ReadLock.Unlock()
 
@@ -97,7 +111,7 @@ func (h *UnixSocket) WriteMessage(message string) bool {
 		msg []byte
 	)
 
-	if h.Status.On() {
+	if h.On() {
 		h.WriteLock.Lock()
 		defer h.WriteLock.Unlock()
 

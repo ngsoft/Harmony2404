@@ -39,9 +39,19 @@ func (h *SocketMessage) Export() []interface{} {
 	}
 }
 
+type ConnHandler struct {
+	util.Logger
+	handlers map[string]Handler
+	Route    string
+	Port     int
+}
+
+func (c *ConnHandler) GetHttpPort() string {
+	return fmt.Sprintf(":%d", c.Port)
+}
+
 type Handler struct {
 	util.BaseHandler
-	*util.WebSocket
 }
 
 const (
@@ -51,6 +61,7 @@ const (
 type FlircHandler struct {
 	Message SocketMessage
 	remote  string
-	*util.UnixSocket
+	path    string
+	util.EventListener
 	util.BaseHandler
 }

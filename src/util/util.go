@@ -12,8 +12,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-var GlobalEvents EventListener
-var traps bool
+var (
+	GlobalEvents EventListener
+	traps        bool
+	exiting      bool
+)
 
 func IsSocket(path string) bool {
 	fileInfo, err := os.Stat(path)
@@ -41,9 +44,10 @@ func ParseFlags() {
 	flag.Parse()
 }
 
-// to be run first in your application
+// SetTraps to be run first in your application
 func SetTraps() {
 	if !traps {
+		traps = true
 		sigc := make(chan os.Signal, 1)
 		signal.Notify(sigc, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 		go func() {
@@ -55,6 +59,10 @@ func SetTraps() {
 }
 
 func Shutdown(code int) {
-	GlobalEvents.DispatchEvent(SHUTDOWN_EVENT, strconv.Itoa(code))
-	os.Exit(code)
+	if !exiting {
+		exiting = true
+		GlobalEvents.DispatchEvent(SHUTDOWN_EVENT, strconv.Itoa(code))
+		os.Exit(code)
+	}
+
 }

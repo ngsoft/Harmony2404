@@ -21,13 +21,13 @@ func (v Status) Off() bool {
 	return v == STATUS_OFF
 }
 
-func (v Status) String() string {
-	switch v {
-	case STATUS_ON:
-		return "STATUS_ON"
-	case STATUS_OFF:
-		return "STATUS_OFF"
-	default:
-		return "STATUS_INITIAL"
-	}
-}
+// func (v Status) String() string {
+// 	switch v {
+// 	case STATUS_ON:
+// 		return "STATUS_ON"
+// 	case STATUS_OFF:
+// 		return "STATUS_OFF"
+// 	default:
+// 		return "STATUS_INITIAL"
+// 	}
+// }

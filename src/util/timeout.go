@@ -10,7 +10,7 @@ type TimeoutEnder func()
 
 func SetTimeout(task func(), duration int) TimeoutEnder {
 
-	var active bool = true
+	var active = true
 	timer := *time.AfterFunc(time.Duration(int64(duration))*time.Millisecond, func() {
 		if !active {
 			return

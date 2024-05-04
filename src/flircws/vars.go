@@ -1,12 +1,15 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"flirc/util"
+)
 
 const (
 	defaultPort   int    = 9023
 	defaultSocket string = "/var/run/lirc/lircd"
 	defaultRemote string = "FLIRC"
-	WsRoute       string = "/ws"
+	wsRoute       string = "/ws"
 )
 
 var (
@@ -14,4 +17,6 @@ var (
 	socket *string = flag.String("socket", defaultSocket, "InputLirc unix socket location")
 	remote *string = flag.String("remote", defaultRemote, "InputLirc Remote channel")
 	flirc  FlircHandler
+	ws     ConnHandler
+	logger = util.NewLogger("[MAIN]")
 )

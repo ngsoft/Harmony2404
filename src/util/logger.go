@@ -36,23 +36,23 @@ func (h *Logger) Log(m string, v ...interface{}) {
 	if h.Logger == nil {
 		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
 	}
-	h.Logger.Output(2, fmt.Sprintf(h.prefix+m+h.suffix, v...))
+	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+m+h.suffix, v...))
 }
 func (h *Logger) Warn(m string, v ...interface{}) {
 	if h.Logger == nil {
 		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
 	}
-	h.Logger.Output(2, fmt.Sprintf(h.prefix+"WARN: "+m+h.suffix, v...))
+	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+"WARN: "+m+h.suffix, v...))
 }
 func (h *Logger) Error(m string, v ...interface{}) {
 	if h.Logger == nil {
 		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
 	}
-	h.Logger.Output(2, fmt.Sprintf(h.prefix+"ERR: "+m+h.suffix, v...))
+	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+"ERR: "+m+h.suffix, v...))
 }
 func (h *Logger) Info(m string, v ...interface{}) {
 	if h.Logger == nil {
 		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
 	}
-	h.Logger.Output(2, fmt.Sprintf(h.prefix+"INFO: "+m+h.suffix, v...))
+	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+"INFO: "+m+h.suffix, v...))
 }
