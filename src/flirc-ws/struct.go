@@ -1,17 +1,27 @@
 package main
 
 import (
+	"flirc/util"
 	"fmt"
-	"log"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-
-	"github.com/gorilla/websocket"
 )
+
+type StatusType string
+
+const (
+	StatusSuccess StatusType = "ok"
+	StatusError   StatusType = "ko"
+)
+
+type BaseResponse struct {
+	Status  StatusType  `json:"status"`
+	Message string      `json:"statusMessage"`
+	Data    interface{} `json:"result"`
+}
+
+type BaseEvent struct {
+	Type   string      `json:"type"`
+	Params interface{} `json:"params"`
+}
 
 type SocketMessage struct {
 	Message string
@@ -21,80 +31,26 @@ type SocketMessage struct {
 	Remote  string
 }
 
-type BaseHandler struct {
-	Uid    string
-	Logger *log.Logger
-	Mutex  struct {
-		Read  sync.Mutex
-		Write sync.Mutex
+func (h *SocketMessage) Export() []interface{} {
+	return []interface{}{
+		fmt.Sprintf("0x%s", h.Code),
+		h.Key,
+		h.Repeat,
 	}
-}
-
-type UnixSocket struct {
-	Conn net.Conn
-	Open bool
-}
-type WebSocket struct {
-	Upgrader websocket.Upgrader
-	Writer   http.ResponseWriter
-	Conn     *websocket.Conn
-	Open     bool
 }
 
 type Handler struct {
-	*BaseHandler
-	Remote     string
-	Socket     string
-	Port       int
-	Route      string
-	UnixSocket UnixSocket
-	WebSocket  WebSocket
+	util.BaseHandler
+	*util.WebSocket
 }
 
-func newHandler() *Handler {
+const (
+	INPUT_EVENT util.EventType = "flirc_input"
+)
 
-	var handler Handler = Handler{
-		BaseHandler: &BaseHandler{
-			Uid: generateUid(),
-		},
-		Socket: *socket,
-		Port:   *wsPort,
-		Remote: *remote,
-		Route:  WsRoute,
-		WebSocket: WebSocket{
-			Upgrader: websocket.Upgrader{
-				ReadBufferSize:  1024,
-				WriteBufferSize: 1024,
-				CheckOrigin:     func(r *http.Request) bool { return true },
-			},
-		},
-	}
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		handler.Shutdown(0)
-	}()
-
-	return &handler
-}
-
-func (h *BaseHandler) log(format string, v ...interface{}) {
-	if h.Logger == nil {
-		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
-	}
-
-	pfx := h.Uid[:10]
-	if pfx != "" {
-		pfx = "[" + pfx + "] "
-	}
-	h.Logger.Output(2, fmt.Sprintf(pfx+format, v...))
-}
-
-func (h *BaseHandler) error(format string, v ...interface{}) {
-	h.log("ERR: "+format, v...)
-}
-func (h *BaseHandler) info(format string, v ...interface{}) {
-	h.log("INFO: "+format, v...)
+type FlircHandler struct {
+	Message SocketMessage
+	remote  string
+	*util.UnixSocket
+	util.BaseHandler
 }
