@@ -5,17 +5,25 @@ import (
 	"fmt"
 )
 
-type StatusType string
+type Status string
 
 const (
-	StatusSuccess StatusType = "ok"
-	StatusError   StatusType = "ko"
+	StatusSuccess Status = "ok"
+	StatusError   Status = "ko"
 )
 
-type BaseResponse struct {
-	Status  StatusType  `json:"status"`
-	Message string      `json:"statusMessage"`
-	Data    interface{} `json:"result"`
+func (s Status) OK() bool {
+	return s == StatusSuccess
+}
+
+type JsonResponse struct {
+	Status  `json:"status"`
+	Message string `json:"statusMessage"`
+}
+
+type JsonResponseWithData struct {
+	*JsonResponse
+	Data interface{} `json:"result"`
 }
 
 type BaseEvent struct {

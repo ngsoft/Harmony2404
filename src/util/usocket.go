@@ -40,7 +40,8 @@ func NewUnixSocket(path string, handler UnixSocketHandler) (*UnixSocket, bool) {
 		handler: handler,
 		Logger:  NewLogger(fmt.Sprintf("[%s]", path)),
 	}
-	GlobalEvents.AddEventHandler(&socket, SHUTDOWN_EVENT)
+
+	AddEventHandler(&socket, ShutdownEvent)
 
 	if s, ok := handler.(EventHandler); ok {
 		socket.AddEventHandler(s)
@@ -48,9 +49,9 @@ func NewUnixSocket(path string, handler UnixSocketHandler) (*UnixSocket, bool) {
 
 	return &socket, true
 }
-func (h *UnixSocket) HandleEvent(ev *Event) {
+func (h *UnixSocket) OnEvent(ev *Event) {
 	switch ev.Type {
-	case SHUTDOWN_EVENT:
+	case ShutdownEvent:
 		h.Info("received shutdown event, closing connection")
 		h.Close()
 	}

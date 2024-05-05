@@ -6,12 +6,10 @@ import (
 	"github.com/imbhargav5/noop"
 )
 
-type TimeoutEnder func()
-
-func SetTimeout(task func(), duration int) TimeoutEnder {
+func SetTimeout(task func(), duration time.Duration) func() {
 
 	var active = true
-	timer := *time.AfterFunc(time.Duration(int64(duration))*time.Millisecond, func() {
+	timer := *time.AfterFunc(duration, func() {
 		if !active {
 			return
 		}

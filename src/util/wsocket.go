@@ -50,7 +50,7 @@ func (s *WebSocket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Status: STATUS_ON,
 	}
 	h.Initialize()
-	GlobalEvents.AddEventHandler(&h, SHUTDOWN_EVENT)
+	AddEventHandler(&h, ShutdownEvent)
 	defer h.Close()
 	h.Info("new connection, executing handler")
 	s.handler.HandleWebSocket(&h)
@@ -70,9 +70,9 @@ func CreateWebSocketRoute(route string, h WebSocketHandler) bool {
 	return true
 }
 
-func (h *WSConn) HandleEvent(ev *Event) {
+func (h *WSConn) OnEvent(ev *Event) {
 	switch ev.Type {
-	case SHUTDOWN_EVENT:
+	case ShutdownEvent:
 		h.Info("received shutdown event, closing connection")
 		h.Close()
 	}

@@ -10,14 +10,24 @@ type ReadWriteLock struct {
 	WriteLock sync.Mutex
 }
 
+type Uid string
+
+func NewUid() Uid {
+	return Uid(GenerateUid())
+}
+
+func (u Uid) GetUid() string {
+	return string(u)
+}
+
 type BaseHandler struct {
-	Uid string
+	Uid
 	Logger
 }
 
 func (h *BaseHandler) Initialize() {
 	if h.Uid == "" {
-		h.Uid = GenerateUid()
+		h.Uid = NewUid()
 		h.Logger = NewLogger(fmt.Sprintf("[%s]", h.Uid[:8]))
 	}
 

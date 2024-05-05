@@ -13,9 +13,7 @@ import (
 )
 
 var (
-	GlobalEvents EventListener
-	traps        bool
-	exiting      bool
+	started, traps, exiting bool
 )
 
 func IsSocket(path string) bool {
@@ -28,7 +26,12 @@ func IsSocket(path string) bool {
 }
 
 func HexToInt(hexString string) int {
-	i, err := strconv.ParseInt("0x"+hexString, 0, 64)
+
+	if hexString[:2] != "0x" {
+		hexString = "0x" + hexString
+	}
+
+	i, err := strconv.ParseInt(hexString, 0, 64)
 	if err != nil {
 		return 0
 	}
@@ -39,30 +42,34 @@ func GenerateUid() string {
 	return uuid.NewV4().String()
 }
 
-func ParseFlags() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
-	flag.Parse()
-}
-
-// SetTraps to be run first in your application
-func SetTraps() {
+func setTraps() {
 	if !traps {
 		traps = true
 		sigc := make(chan os.Signal, 1)
 		signal.Notify(sigc, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 		go func() {
 			c := <-sigc
-			GlobalEvents.DispatchEvent(SIGNAL_EVENT, c.String())
+			DispatchEvent(SignalEvent, c.String())
 			Shutdown(0)
 		}()
+	}
+}
+
+// SetTraps to be run first in your application
+func Initialize() {
+	if !started {
+		started = true
+		log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
+		flag.Parse()
+		setTraps()
+		DispatchEvent(InitializeEvent)
 	}
 }
 
 func Shutdown(code int) {
 	if !exiting {
 		exiting = true
-		GlobalEvents.DispatchEvent(SHUTDOWN_EVENT, strconv.Itoa(code))
+		DispatchEvent(ShutdownEvent, code)
 		os.Exit(code)
 	}
-
 }
