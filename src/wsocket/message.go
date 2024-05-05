@@ -16,6 +16,7 @@ type EventType string
 type Payload []interface{}
 
 type Event struct {
+	Channel bool
 	Direction
 	Type EventType
 	Data interface{}
