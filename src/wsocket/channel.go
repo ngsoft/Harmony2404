@@ -74,3 +74,6 @@ func (h *Channel) UnRegisterClient(c *Client) {
 func (h *Channel) BroadcastEvent(e *Event) {
 	h.event <- e
 }
+func (h *Channel) BroadcastMessage(m string) {
+	h.message <- m
+}

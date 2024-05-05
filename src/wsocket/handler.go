@@ -21,35 +21,56 @@ func (h *ChannelHandler) AddChannel(ch *Channel, ev EventType) {
 
 func (h *ChannelHandler) OnMessageEvent(c *Client, e *Event) {
 	h.__init()
+
 	if e.Direction == Incoming {
+		// lock client
+		c.Locked = true
+		defer func() {
+			// unlock client
+			c.Locked = false
+		}()
+
 		t := e.Type
-		// channel exists
-		if newChan, ok := h.Channels[t]; ok {
+		// channel bound to the event
+		if ch, ok := h.Channels[t]; ok {
 			// switching channel
-			if currentChan, ok := h.Clients[c]; ok {
-				if currentChan != newChan {
-					currentChan.UnRegisterClient(c)
-					newChan.RegisterClient(c)
-				}
+			currentChan, ok := h.Clients[c]
+			if ok && currentChan != ch {
+				currentChan.UnRegisterClient(c)
+				ch.RegisterClient(c)
 			}
+			if !ok {
+				ch.RegisterClient(c)
+			}
+			// keep a record of the client channel
+			h.Clients[c] = ch
+
 			// add event to channel
-			newChan.BroadcastEvent(e)
+			ch.BroadcastEvent(e)
 			return
 		}
-		// not existing channel
+		// client is in a channel
+		if ch, ok := h.Clients[c]; ok {
+			// let the channel handle the event
+			ch.BroadcastEvent(e)
+			return
+		}
+
+		// client not in channel
 		ev := NewEvent(ErrorEvent, "invalid event sent")
 		c.SendEvent(&ev)
 	}
 
 }
-func (*ChannelHandler) OnMessage(c *Client, m string) {
-	ev := NewEvent(ErrorEvent, "invalid message sent")
-	c.SendEvent(&ev)
+func (h *ChannelHandler) OnMessage(c *Client, m string) {
+	if ch, ok := h.Clients[c]; ok {
+		ch.BroadcastMessage(m)
+	}
 }
 func (h *ChannelHandler) OnOpen(c *Client) {
 	h.__init()
 
 }
 func (*ChannelHandler) OnClose(c *Client) {
-
+	// noop
 }

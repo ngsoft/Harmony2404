@@ -40,6 +40,7 @@ type Client struct {
 	ok       chan bool
 	running  bool
 	clientconfig
+	Locked bool
 }
 
 func NewClient(r *Router, c *websocket.Conn) *Client {
@@ -101,7 +102,9 @@ func (h *Client) messageHandler() {
 				if !ok {
 					return
 				}
-				h.Handler.OnMessageEvent(h, ev)
+				if !h.Locked {
+					h.Handler.OnMessageEvent(h, ev)
+				}
 			case ev, ok := <-h.outgoing:
 				if !ok || !h.SendMessage(ev.String()) {
 					return
@@ -182,7 +185,7 @@ func (h *Client) ReadMessage() (string, bool) {
 		mt    int
 		msg   string
 		input []byte
-		err   = fmt.Errorf("connection status is off or undefined")
+		err   = fmt.Errorf("connection status is off")
 	)
 
 	if h.On() {
@@ -196,11 +199,11 @@ func (h *Client) ReadMessage() (string, bool) {
 				case websocket.BinaryMessage:
 					err = fmt.Errorf("binary message received")
 				case websocket.TextMessage:
-					msg = strings.TrimRight(string(input), "\r\n")
+					msg = strings.TrimRight(string(input), " \r\n")
 				case websocket.PingMessage:
 					h.Info("received ping, sending pong")
 					err = fmt.Errorf("cannot send pong message")
-					if ok := h.sendPong(strings.TrimRight(string(input), "\r\n")); ok {
+					if ok := h.sendPong(strings.TrimRight(string(input), " \r\n")); ok {
 						// wait for real message
 						loop = true
 						err = nil
@@ -227,7 +230,7 @@ func (h *Client) ReadMessage() (string, bool) {
 }
 
 func (h *Client) sendPing(message string) bool {
-	var err = fmt.Errorf("connection status is off or undefined")
+	var err = fmt.Errorf("connection status is off")
 	if h.On() {
 		h.WriteLock.Lock()
 		defer h.WriteLock.Unlock()
@@ -241,7 +244,7 @@ func (h *Client) sendPing(message string) bool {
 }
 
 func (h *Client) sendPong(message string) bool {
-	var err = fmt.Errorf("connection status is off or undefined")
+	var err = fmt.Errorf("connection status is off")
 	if h.On() {
 		h.WriteLock.Lock()
 		defer h.WriteLock.Unlock()
@@ -255,7 +258,7 @@ func (h *Client) sendPong(message string) bool {
 }
 
 func (h *Client) SendMessage(message string) bool {
-	var err = fmt.Errorf("connection status is off or undefined")
+	var err = fmt.Errorf("connection status is off")
 	if h.On() {
 		h.WriteLock.Lock()
 		defer h.WriteLock.Unlock()
