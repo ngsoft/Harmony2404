@@ -17,6 +17,6 @@ var (
 	socket *string = flag.String("socket", defaultSocket, "InputLirc unix socket location")
 	remote *string = flag.String("remote", defaultRemote, "InputLirc Remote channel")
 	flirc  FlircHandler
-	ws     ConnHandler
+	// ws     ConnHandler
 	logger = util.NewLogger("[MAIN]")
 )

@@ -2,6 +2,7 @@ package util
 
 import (
 	"flag"
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
@@ -27,7 +28,7 @@ func IsSocket(path string) bool {
 
 func HexToInt(hexString string) int {
 
-	if hexString[:2] != "0x" {
+	if fmt.Sprintf("%s  ", hexString)[:2] != "0x" {
 		hexString = "0x" + hexString
 	}
 

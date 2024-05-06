@@ -16,9 +16,9 @@ func (e EventType) String() string {
 
 const (
 	allEvents       EventType = "all"
-	SignalEvent               = "signal"
-	InitializeEvent           = "init"
-	ShutdownEvent             = "shutdown"
+	SignalEvent     EventType = "signal"
+	InitializeEvent EventType = "init"
+	ShutdownEvent   EventType = "shutdown"
 )
 
 type EventDisabler func()
@@ -59,7 +59,7 @@ func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) EventDis
 		ok bool
 	)
 
-	if id, ok = h.registered[e]; !ok {
+	if _, ok = h.registered[e]; !ok {
 		id = len(h.registered)
 		h.registered[e] = id
 	}

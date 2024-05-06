@@ -34,6 +34,7 @@ type BaseEvent struct {
 type SocketMessage struct {
 	Message string
 	Code    string
+	CodeInt int
 	Repeat  int
 	Key     string
 	Remote  string

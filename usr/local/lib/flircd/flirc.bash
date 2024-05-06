@@ -53,7 +53,18 @@ flirc.sudo() {
 
 # Checks if device is connected
 function flirc.connected() {
-    @ flirc.devices
+    if @ flirc.devices; then
+        if [ -z "$flirc_model" ]; then
+            flirc_model=1
+            if flirc version | grep SKU | grep 2.0 &>>/dev/null; then
+                flirc_model=2
+            fi
+            export flirc_model
+        fi
+        return $COMMAND_SUCCESS
+    fi
+    export flirc_model=0
+    return $COMMAND_FAILURE
 }
 
 # Finds flirc devices and display their path
@@ -85,12 +96,13 @@ flirc.status() {
     status=$(flirc 2>/dev/null version)
     text="disconnected"
     result=1
-    if echo $status | grep "SKU" &>>/dev/null; then
-        text="connected"
-        result=0
-    elif echo $status | grep "Bootloader" &>>/dev/null; then
+
+    if echo $status | grep "Bootloader" &>>/dev/null; then
         text="bootloader"
         result=2
+    elif echo $status | grep "SKU" &>>/dev/null; then
+        text="connected"
+        result=0
     fi
     echo $text
     return $result
@@ -110,6 +122,9 @@ flirc.set() {
     local valid=(sleep_detect seq_modifiers noise_canceler profiles interkey_delay)
     if array.contains $option ${valid[@]}; then
         if [ "$option" == "interkey_delay" ]; then
+            if [ "$flirc_model" == "2" ]; then
+                return $COMMAND_FAILURE
+            fi
             [[ $value =~ ^[0-6]$ ]] || return 1
             flirc $option $value &>>/dev/null
             return $?

@@ -3,9 +3,14 @@ package main
 import (
 	"flirc/util"
 	"strings"
+	"time"
+
+	"github.com/imbhargav5/noop"
 )
 
 func (h *FlircHandler) HandleEvent(ev *util.Event) {
+
+	h.Log("%v", ev)
 	switch ev.Type {
 	case util.CONNECTION_CLOSE:
 		h.Info("Connection closed ")
@@ -18,7 +23,7 @@ func (h *FlircHandler) HandleEvent(ev *util.Event) {
 func (h *Handler) HandleEvent(ev *util.Event) {
 	switch ev.Type {
 	case INPUT_EVENT:
-	case util.SHUTDOWN_EVENT:
+	case util.ShutdownEvent:
 	}
 }
 
@@ -50,6 +55,8 @@ func (h *FlircHandler) HandleUnixSocket(s *util.UnixSocket) {
 		msg     string
 		success bool
 		data    []string
+		lock    bool
+		fn      = noop.Noop
 	)
 
 	h.Info("connected to socket %v", s.Path)
@@ -59,9 +66,14 @@ func (h *FlircHandler) HandleUnixSocket(s *util.UnixSocket) {
 		if !success {
 			if s.Status.On() {
 				h.Error("disconnected from socket %v", s.Path)
+				fn()
 				util.Shutdown(1)
 			}
 			return
+		}
+
+		if lock {
+			continue
 		}
 
 		// decode packet
@@ -78,12 +90,19 @@ func (h *FlircHandler) HandleUnixSocket(s *util.UnixSocket) {
 		h.Message = SocketMessage{
 			Message: msg,
 			Code:    data[0],
+			CodeInt: util.HexToInt(data[0]),
 			Repeat:  util.HexToInt(data[1]),
 			Key:     data[2],
 			Remote:  data[3],
 		}
 
+		h.Log("%v", h.Message)
+
 		h.DispatchEvent(INPUT_EVENT)
+		lock = true
+		fn = util.SetTimeout(func() {
+			lock = false
+		}, 200*time.Millisecond)
 
 	}
 
