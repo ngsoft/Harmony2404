@@ -1,9 +1,5 @@
 package util
 
-var (
-	globalEvents EventListener
-)
-
 type EventType string
 
 func (t EventType) Is(tt EventType) bool {
@@ -15,13 +11,11 @@ func (e EventType) String() string {
 }
 
 const (
-	allEvents       EventType = "all"
-	SignalEvent     EventType = "signal"
-	InitializeEvent EventType = "init"
-	ShutdownEvent   EventType = "shutdown"
+	allEvents       EventType = "util.all"
+	SignalEvent     EventType = "util.signal"
+	InitializeEvent EventType = "util.init"
+	ShutdownEvent   EventType = "util.shutdown"
 )
-
-type EventDisabler func()
 
 type Event struct {
 	Type   EventType
@@ -51,7 +45,7 @@ func (h *EventListener) __init() {
 	}
 }
 
-func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) EventDisabler {
+func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) func() {
 	h.__init()
 
 	var (
@@ -79,9 +73,7 @@ func (h *EventListener) AddEventHandler(e EventHandler, v ...EventType) EventDis
 		h.RemoveEventHandler(e, v...)
 	}
 }
-func AddEventHandler(e EventHandler, v ...EventType) EventDisabler {
-	return globalEvents.AddEventHandler(e, v...)
-}
+
 func (h *EventListener) RemoveEventHandler(e EventHandler, v ...EventType) {
 	if !h.init {
 		return
@@ -98,9 +90,7 @@ func (h *EventListener) RemoveEventHandler(e EventHandler, v ...EventType) {
 	}
 
 }
-func RemoveEventHandler(e EventHandler, v ...EventType) {
-	globalEvents.RemoveEventHandler(e, v...)
-}
+
 func (h *EventListener) DispatchEvent(e EventType, p ...interface{}) {
 	if !h.init {
 		return
@@ -125,7 +115,4 @@ func (h *EventListener) DispatchEvent(e EventType, p ...interface{}) {
 			l.OnEvent(&ev)
 		}
 	}
-}
-func DispatchEvent(e EventType, p ...interface{}) {
-	globalEvents.DispatchEvent(e, p...)
 }

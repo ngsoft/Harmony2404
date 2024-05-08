@@ -1,9 +1,12 @@
 package main
 
 import (
+	"flirc/usocket"
 	"flirc/util"
 	"fmt"
 )
+
+type Keymap string
 
 type Status string
 
@@ -68,9 +71,10 @@ const (
 )
 
 type FlircHandler struct {
-	Message SocketMessage
+	keymaps []Keymap
 	remote  string
-	path    string
-	util.EventListener
-	util.BaseHandler
+	delay   int
+	*usocket.UnixSocket
+	util.Logger
+	lock bool
 }

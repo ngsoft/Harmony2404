@@ -2,7 +2,7 @@
 # Comparison functions
 ##
 function is() {
-    pass
+    [ "$1" == "$2" ]
 }
 
 function is.bool() {

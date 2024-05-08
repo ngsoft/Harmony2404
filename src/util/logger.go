@@ -31,28 +31,27 @@ func NewLogger(v ...interface{}) Logger {
 	}
 	return l
 }
-
-func (h *Logger) Log(m string, v ...interface{}) {
+func (h *Logger) SetLoggerPrefix(pfx string) {
+	h.prefix = pfx
+}
+func (h *Logger) __init() {
 	if h.Logger == nil {
-		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile)
 	}
+}
+func (h *Logger) Log(m string, v ...interface{}) {
+	h.__init()
 	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+m+h.suffix, v...))
 }
 func (h *Logger) Warn(m string, v ...interface{}) {
-	if h.Logger == nil {
-		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
-	}
+	h.__init()
 	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+"WARN: "+m+h.suffix, v...))
 }
 func (h *Logger) Error(m string, v ...interface{}) {
-	if h.Logger == nil {
-		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
-	}
+	h.__init()
 	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+"ERR: "+m+h.suffix, v...))
 }
 func (h *Logger) Info(m string, v ...interface{}) {
-	if h.Logger == nil {
-		h.Logger = log.New(os.Stderr, "", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
-	}
+	h.__init()
 	_ = h.Logger.Output(2, fmt.Sprintf(h.prefix+"INFO: "+m+h.suffix, v...))
 }

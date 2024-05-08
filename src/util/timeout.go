@@ -25,3 +25,27 @@ func SetTimeout(task func(), duration time.Duration) func() {
 		}
 	}
 }
+
+func SetInterval(task func(), duration time.Duration) func() {
+
+	var (
+		active = true
+		ticker = *time.NewTicker(duration)
+	)
+
+	go func() {
+		for range ticker.C {
+			if !active {
+				return
+			}
+			task()
+		}
+	}()
+
+	return func() {
+		active = false
+		task = noop.Noop
+		ticker.Stop()
+	}
+
+}

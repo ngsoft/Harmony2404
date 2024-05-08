@@ -7,7 +7,8 @@
 # Get CWD
 APP_NAME="flircd"
 APP_DESC="FLIRC Manager"
-FLIRC_ROOT="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
+FLIRC_BIN="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+FLIRC_ROOT="$(dirname "$FLIRC_BIN")"
 FLIRC_PREFIX="$(dirname "$(dirname "$FLIRC_ROOT")")"
 FLIRC_LIB="$FLIRC_ROOT/lib/$APP_NAME"
 FLIRC_CFG="$FLIRC_PREFIX/etc/$APP_NAME"
@@ -16,6 +17,11 @@ FLIRC_PIDFILE="$FLIRC_RUN/${APP_NAME}.pid"
 export LOGFILE="/var/log/${APP_NAME}.log"
 INPUTLIRC_CFG_FILE="$FLIRC_CFG/inputlirc.conf"
 FLIRC_CFG_FILE="${FLIRC_CFG}/flirc.conf"
+
+# Trap Events
+FLIRC_EVENT_XINPUT_ENABLE=SIGUSR1
+FLIRC_EVENT_XINPUT_DISABLE=SIGUSR2
+# FLIRC_EVENT_ACTIVITY_CHANGE=SIGRTMIN
 
 if [ -d "$FLIRC_LIB" ]; then
     INCLUDE_PATH="$FLIRC_LIB"
@@ -89,7 +95,9 @@ if VALID_ARGS=$(getopt -o vdh --long verbose,daemon,help -- "$@" 2>/dev/null); t
 
 else do.usage; fi
 
-require daemon flirc mkservice
+export PATH=$PATH:$FLIRC_BIN
+
+require daemon flirc desktop mkservice
 
 # InputLirc Daemon management
 new Daemon InputLirc inputlircd
@@ -134,6 +142,14 @@ function cleanup() {
     @ rm -rf "$FLIRC_PIDFILE"
 }
 
+function enable_input() {
+    flirc.capture off
+}
+
+function disable_input() {
+    flirc.capture on
+}
+
 function do.kill() {
     exit $COMMAND_SUCCESS
 }
@@ -144,6 +160,8 @@ function do.exit() {
     return $COMMAND_SUCCESS
 }
 
+trap enable_input $FLIRC_EVENT_XINPUT_ENABLE
+trap disable_input $FLIRC_EVENT_XINPUT_DISABLE
 trap do.exit EXIT
 trap do.kill SIGINT SIGTERM SIGQUIT
 
