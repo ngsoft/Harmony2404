@@ -2,24 +2,24 @@ package util
 
 import (
 	"time"
-
-	"github.com/imbhargav5/noop"
 )
 
 func SetTimeout(task func(), duration time.Duration) func() {
 
-	var active = true
-	timer := *time.AfterFunc(duration, func() {
-		if !active {
-			return
+	var (
+		cnt   int
+		timer = time.NewTimer(duration)
+	)
+
+	go func() {
+		<-timer.C
+		if cnt == 0 {
+			task()
 		}
-		active = false
-		task()
-	})
+	}()
 
 	return func() {
-		task = noop.Noop
-		active = false
+		cnt++
 		if !timer.Stop() {
 			<-timer.C
 		}
@@ -30,10 +30,11 @@ func SetInterval(task func(), duration time.Duration) func() {
 
 	var (
 		active = true
-		ticker = *time.NewTicker(duration)
+		ticker = time.NewTicker(duration)
 	)
 
 	go func() {
+		defer ticker.Stop()
 		for range ticker.C {
 			if !active {
 				return
@@ -44,7 +45,6 @@ func SetInterval(task func(), duration time.Duration) func() {
 
 	return func() {
 		active = false
-		task = noop.Noop
 		ticker.Stop()
 	}
 
