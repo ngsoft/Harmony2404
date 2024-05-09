@@ -1,0 +1,56 @@
+#!/bin/bash
+
+#app info
+
+APP_DESC="FLIRC Xinput Capture"
+
+# app usage
+function do.usage() {
+    echo $APP_DESC
+    echo "usage: flirc_xinput [mode] [...options]"
+    echo "  enable    Enable xinput device capture"
+    echo "  disable   Disable xinput device capture"
+    echo "  -h  --help     this help"
+    exit 0
+}
+
+for re in "-h" "--help"; do
+    if echo "$@" | grep -e "$re" &>>/dev/null; then
+        do.usage
+    fi
+done
+
+APP_NAME="flircd"
+FLIRC_BIN="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+FLIRC_ROOT="$(dirname "$FLIRC_BIN")"
+FLIRC_PREFIX="$(dirname "$(dirname "$FLIRC_ROOT")")"
+FLIRC_LIB="$FLIRC_ROOT/lib/$APP_NAME"
+FLIRC_CFG="$FLIRC_PREFIX/etc/$APP_NAME"
+if [ -d "$FLIRC_LIB" ]; then
+    INCLUDE_PATH="$FLIRC_LIB"
+fi
+
+# Loads bash-framework
+[ -e "$FLIRC_ROOT/lib/bash-framework/bash-framework" ] || throw "bash-framework location not found."
+source "$FLIRC_ROOT/lib/bash-framework/bash-framework"
+
+export PATH=$PATH:$FLIRC_BIN
+require flirc desktop
+
+mode=on
+enable=enabled
+if is disable "$1"; then
+    mode=off
+    enable=disabled
+fi
+
+if flirc.connected; then
+    if flirc.capture $mode; then
+        echo "Flirc device capture successfully ${enable}"
+        exit $COMMAND_SUCCESS
+    fi
+    echo "An error has occured" >&2
+else
+    echo "Flirc device is disconnected" >&2
+fi
+exit $COMMAND_FAILURE

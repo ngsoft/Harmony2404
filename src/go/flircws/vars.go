@@ -22,10 +22,7 @@ var (
 	pingOn   *bool   = flag.Bool("ping", false, "Enable web socket ping")
 	flirc    FlircHandler
 	logger   util.Logger
-	etc      = []string{
-		"../../etc",
-		"../../../etc",
-	}
-	cfgDir = "flircd"
-	ws     wsocket.WebSocket
+	cfgDir   = "etc/flircd"
+	libDir   = "usr/local/lib/flircd"
+	ws       wsocket.WebSocket
 )

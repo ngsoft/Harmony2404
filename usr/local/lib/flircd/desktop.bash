@@ -17,7 +17,7 @@ function sudo.install() {
 
 function session.detect() {
     if ! desktop.running; then return $COMMAND_FAILURE; fi
-    if [ -z "$SESSION_USER" ]; then
+    if [ -z "$DISPLAY" ]; then
         local info user disp
         for info in $(who); do
             if [ -z "$user" ]; then
@@ -44,6 +44,10 @@ function session.detect() {
 
 function sudo.execute() {
     [ -z "$1" ] && return $COMMAND_FAILURE
-    sudo.install
-    sudo -u $SESSION_USER $@
+    if [ -n "$SESSION_USER" ]; then
+        sudo.install
+        sudo -u $SESSION_USER $@
+    else
+        $@
+    fi
 }

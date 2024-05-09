@@ -7,6 +7,10 @@ import (
 )
 
 func main() {
+
+	logger.Info("keymaps=>%v", LoadKeymaps())
+
+	return
 	util.Initialize()
 
 	logger.Info(
