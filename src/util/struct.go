@@ -26,7 +26,7 @@ type BaseHandler struct {
 }
 
 func (h *BaseHandler) Initialize() {
-	if h.Uid == "" {
+	if h.GetUid() == "" {
 		h.Uid = NewUid()
 		h.Logger = NewLogger(fmt.Sprintf("[%s]", h.Uid[:8]))
 	}

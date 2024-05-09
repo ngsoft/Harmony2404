@@ -32,7 +32,7 @@ func NewLogger(v ...interface{}) Logger {
 	return l
 }
 func (h *Logger) SetLoggerPrefix(pfx string) {
-	h.prefix = pfx
+	h.prefix = strings.TrimRight(pfx, " ") + " "
 }
 func (h *Logger) __init() {
 	if h.Logger == nil {

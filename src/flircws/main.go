@@ -3,18 +3,19 @@ package main
 import (
 	"flirc/usocket"
 	"flirc/util"
-	"log"
+	"flirc/wsocket"
 )
 
 func main() {
 	util.Initialize()
 
-	log.Printf(
-		"INFO: flags(port=>%v, socket=>%v, remote => %v, delay => %v)",
+	logger.Info(
+		"flags(port=>%v, socket=>%v, remote => %v, delay => %v, ping => %v)",
 		*wsPort,
 		*socket,
 		*remote,
 		*keyDelay,
+		*pingOn,
 	)
 
 	flirc = FlircHandler{
@@ -22,14 +23,20 @@ func main() {
 		delay:   *keyDelay,
 		keymaps: LoadKeymaps(),
 	}
+	flirc.SetLoggerPrefix("[usocket]")
 	s, ok := usocket.ConnectSocket(*socket, &flirc)
 	if ok {
-		logger.Info("connected to %s", *socket)
+		flirc.Info("connected to %s", *socket)
 		util.AddEventHandler(&flirc)
-		s.Run()
+		go s.Run()
+	}
 
+	// launch WS
+	ws.Config = wsocket.Config{
+		Ping: *pingOn,
+		Port: *wsPort,
 	}
-	for s.HasStatus() {
-		continue
-	}
+	flirc.Room = ws.AddRoom("remote")
+
+	ws.Run()
 }

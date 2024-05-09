@@ -3,24 +3,25 @@ package main
 import (
 	"flirc/usocket"
 	"flirc/util"
+	"flirc/wsocket"
 	"fmt"
 )
 
 type Keymap string
-
-type Status string
+type State string
 
 const (
-	StatusSuccess Status = "ok"
-	StatusError   Status = "ko"
+	StateSuccess State        = "ok"
+	StateError   State        = "ko"
+	Input        wsocket.Type = "input"
 )
 
-func (s Status) OK() bool {
-	return s == StatusSuccess
+func (s State) OK() bool {
+	return s == StateSuccess
 }
 
 type JsonResponse struct {
-	Status  `json:"status"`
+	State   `json:"status"`
 	Message string `json:"statusMessage"`
 }
 
@@ -51,24 +52,9 @@ func (h *SocketMessage) Export() []interface{} {
 	}
 }
 
-type ConnHandler struct {
-	util.Logger
-	handlers map[string]Handler
-	Route    string
-	Port     int
-}
-
-func (c *ConnHandler) GetHttpPort() string {
-	return fmt.Sprintf(":%d", c.Port)
-}
-
 type Handler struct {
 	util.BaseHandler
 }
-
-const (
-	INPUT_EVENT util.EventType = "flirc_input"
-)
 
 type FlircHandler struct {
 	keymaps []Keymap
@@ -77,4 +63,5 @@ type FlircHandler struct {
 	*usocket.UnixSocket
 	util.Logger
 	lock bool
+	Room *wsocket.Room
 }

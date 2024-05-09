@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"flirc/util"
+	"flirc/wsocket"
 )
 
 const (
@@ -18,12 +19,13 @@ var (
 	socket   *string = flag.String("socket", defaultSocket, "InputLirc unix socket location")
 	remote   *string = flag.String("remote", defaultRemote, "InputLirc Remote channel")
 	keyDelay *int    = flag.Int("delay", defaultDelay, "Inter key delay in ms")
+	pingOn   *bool   = flag.Bool("ping", false, "Enable web socket ping")
 	flirc    FlircHandler
-	logger   = util.NewLogger("[MAIN]")
+	logger   util.Logger
 	etc      = []string{
 		"../../etc",
 		"../../../etc",
 	}
-	cfgDir  = "flircd"
-	keymaps []Keymap
+	cfgDir = "flircd"
+	ws     wsocket.WebSocket
 )

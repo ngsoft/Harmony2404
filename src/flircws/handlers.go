@@ -19,15 +19,14 @@ func (h *FlircHandler) OnEvent(ev *util.Event) {
 func (h *FlircHandler) OnSocketEvent(ev *usocket.SocketEvent, s *usocket.UnixSocket) {
 	switch ev.Type {
 	case usocket.Close:
-		h.Info("close")
-
+		h.Info("connection close")
 		if !util.IsStopping() {
-			h.Info("app is not stopping, reconnecting to socket...")
-			h.Reconnect(time.Second)
+			h.Info("reconnecting to socket")
+			go h.Reconnect(time.Second)
 		}
 
 	case usocket.Open:
-		h.Info("open")
+		h.Info("connection open")
 		h.UnixSocket = s
 	case usocket.Incoming:
 		if !h.lock {
@@ -36,6 +35,9 @@ func (h *FlircHandler) OnSocketEvent(ev *usocket.SocketEvent, s *usocket.UnixSoc
 				h.lock = false
 			}, time.Duration(h.delay)*time.Millisecond)
 			h.Info(ev.Message)
+			if h.Room != nil {
+				h.Room.SendEvent(Input, ev.Message)
+			}
 		}
 
 	}

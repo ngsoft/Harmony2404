@@ -65,7 +65,7 @@ func (s *UnixSocket) Run() {
 	if s.On() {
 		go s.OnSocketEvent(&SocketEvent{Type: Open}, s)
 		s.init = true
-		go s.read()
+		s.read()
 	}
 
 }
@@ -102,7 +102,6 @@ func (s *UnixSocket) read() {
 					Message: string(line),
 				}, s)
 			}
-
 		}
 	}
 }
@@ -150,11 +149,11 @@ func (s *UnixSocket) Reconnect(delay time.Duration) {
 		if !util.IsStopping() {
 			c, err := net.Dial("unix", s.file)
 			if err == nil {
+				ticker.Stop()
 				s.conn = c
 				s.Status = util.NewStatus()
 				go s.OnSocketEvent(&SocketEvent{Type: Open}, s)
-				go s.read()
-				return
+				s.read()
 			}
 		}
 

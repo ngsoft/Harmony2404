@@ -46,7 +46,7 @@ func setTraps() {
 	}
 }
 
-// SetTraps to be run first in your application
+// Initialize to be run first in your application
 func Initialize() {
 	if !started {
 		started = true
