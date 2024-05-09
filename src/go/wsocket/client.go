@@ -19,38 +19,18 @@ type Client struct {
 	pong        func()
 	ok          chan bool
 	running     bool
-	Handler     Handler
 	util.ReadWriteLock
 }
 
 func (c *Client) OnMessage(d Direction, t Type, v ...interface{}) {
-	var (
-		ok bool
-	)
 
-	c.Info("client event(direction=>`%s`, type=>`%s`, args=>(%v))", d.String(), t, v)
-	// handle reserved event
-	if d == In && t == JoinRoom {
-		room := ""
-		if len(v) > 0 {
-			if room, ok = v[0].(string); ok {
-				ok = c.WebSocket.SwitchRoom(c, room)
-			}
-		}
-
-		if !ok {
-			c.SendEvent(Error, "invalid room "+room)
-		}
-		return
-	}
-
-	// external handler
-	if c.Handler != nil {
-		c.Handler.OnMessage(c, d, t, v...)
-	} else if c.CurrentRoom != nil {
-		// send event to room
-		c.CurrentRoom.OnMessage(c, d, t, v...)
-	}
+	// pass on message to middleware stack
+	c.WebSocket.OnMessage(&MessageEvent{
+		Client:    c,
+		Type:      t,
+		Direction: d,
+		Params:    v,
+	})
 }
 
 func (c *Client) Run() {
@@ -130,8 +110,8 @@ func (c *Client) reader() {
 
 			}
 
-			// call message handler
-			go c.OnMessage(In, t, v...)
+			// call message handler (synchronous to keep right order)
+			c.OnMessage(In, t, v...)
 
 		}
 
@@ -193,7 +173,7 @@ func (c *Client) SendEvent(t Type, v ...interface{}) bool {
 		return false
 	}
 	if c.SendMessage(string(input)) {
-		go c.OnMessage(Out, t, v...)
+		c.OnMessage(Out, t, v...)
 		return true
 	}
 	return false

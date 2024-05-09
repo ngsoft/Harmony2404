@@ -1,7 +1,8 @@
 package wsocket
 
 const (
-	JoinRoom Type = "join"
+	JoinRoom  Type = "join"
+	LeaveRoom Type = "leave"
 )
 
 type Room struct {
@@ -31,23 +32,6 @@ func (r *Room) RemoveClient(c *Client) {
 
 func (r *Room) SetHandler(h Handler) {
 	r.Handler = h
-}
-func (r *Room) OnMessage(c *Client, d Direction, t Type, v ...interface{}) {
-
-	if r.Handler != nil {
-		r.Handler.OnMessage(c, d, t, v...)
-		return
-	}
-
-	// basic room broadcast for everyone except sender
-	if d.IsIncoming() {
-		for cl := range r.Clients {
-			if cl != c {
-				cl.SendEvent(t, v...)
-			}
-		}
-	}
-
 }
 
 // SendEvent send event to everyone in the room

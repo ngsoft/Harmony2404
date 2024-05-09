@@ -35,10 +35,11 @@ type WebSocket struct {
 	util.Logger
 	Config
 	util.EventListener
-	Clients map[*Client]bool
-	Rooms   map[string]*Room
-	init    bool
-	running bool
+	Clients     map[*Client]bool
+	Rooms       map[string]*Room
+	Middlewares map[Handler]bool
+	init        bool
+	running     bool
 }
 
 func (s *WebSocket) __init() {
@@ -55,12 +56,40 @@ func (s *WebSocket) __init() {
 		}
 		s.Clients = make(map[*Client]bool)
 		s.Rooms = make(map[string]*Room)
+		s.Middlewares = make(map[Handler]bool)
+		s.Middlewares[&DefaultHandler{}] = true
 		s.SetLoggerPrefix("[ws]")
 		s.AddEventHandler(s)
 		http.Handle(s.Route, s)
 	}
 }
 
+func (s *WebSocket) OnMessage(m *MessageEvent) {
+	s.__init()
+	var (
+		prev, current *NextHandler
+	)
+
+	prev = &NextHandler{last: true}
+
+	for h := range s.Middlewares {
+		current = &NextHandler{
+			next: prev,
+			h:    h,
+		}
+		prev = current
+	}
+	// call current middleware (last in stack)
+	current.OnMessage(m)
+
+}
+
+// AddHandler add a middleware to the LIFO stack
+func (s *WebSocket) AddHandler(h Handler) {
+	if _, ok := s.Middlewares[h]; !ok {
+		s.Middlewares[h] = true
+	}
+}
 func (s *WebSocket) addr() string {
 	return ":" + strconv.Itoa(s.Port)
 }

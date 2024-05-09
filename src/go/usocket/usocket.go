@@ -19,25 +19,16 @@ var (
 	newLine = "\n"
 )
 
-type SocketEvent struct {
-	Type    util.EventType
-	Message string
-}
-
-type Handler interface {
-	OnSocketEvent(*SocketEvent, *UnixSocket)
-}
-
 type UnixSocket struct {
 	util.Status
-	Handler
+	util.EventListener
 	util.ReadWriteLock
 	init bool
 	file string
 	conn net.Conn
 }
 
-func ConnectSocket(file string, h Handler) (*UnixSocket, bool) {
+func ConnectSocket(file string, h util.EventHandler) (*UnixSocket, bool) {
 	var socket UnixSocket
 	if !util.IsSocket(file) {
 		return &socket, false
@@ -47,11 +38,12 @@ func ConnectSocket(file string, h Handler) (*UnixSocket, bool) {
 		return &socket, false
 	}
 	socket = UnixSocket{
-		Handler: h,
-		file:    file,
-		conn:    c,
-		Status:  util.NewStatus(),
+		file:   file,
+		conn:   c,
+		Status: util.NewStatus(),
 	}
+	socket.AddEventHandler(h)
+	util.AddEventHandler(h)
 	return &socket, true
 }
 
@@ -63,7 +55,10 @@ func (s *UnixSocket) Run() {
 		return
 	}
 	if s.On() {
-		go s.OnSocketEvent(&SocketEvent{Type: Open}, s)
+		go s.DispatchEvent(
+			Open,
+			s,
+		)
 		s.init = true
 		s.read()
 	}
@@ -74,7 +69,10 @@ func (s *UnixSocket) Close() {
 	if s.On() {
 		s.Status++
 		_ = s.conn.Close()
-		s.OnSocketEvent(&SocketEvent{Type: Close}, s)
+		go s.DispatchEvent(
+			Close,
+			s,
+		)
 	}
 
 }
@@ -97,10 +95,11 @@ func (s *UnixSocket) read() {
 		}
 		for _, line := range bytes.Split(input[:l], []byte(newLine)) {
 			if len(line) > 0 {
-				go s.OnSocketEvent(&SocketEvent{
-					Type:    Incoming,
-					Message: string(line),
-				}, s)
+				go s.DispatchEvent(
+					Incoming,
+					s,
+					string(line),
+				)
 			}
 		}
 	}
@@ -115,6 +114,7 @@ func (s *UnixSocket) SendMessage(message string) bool {
 			l   int
 			err error
 		)
+		message = strings.ReplaceAll(message, "\r", "")
 		for _, line := range strings.Split(message, newLine) {
 			if len(line) > 0 {
 				l, err = s.conn.Write([]byte(line + newLine))
@@ -122,10 +122,12 @@ func (s *UnixSocket) SendMessage(message string) bool {
 					s.Close()
 					return false
 				}
-				go s.OnSocketEvent(&SocketEvent{
-					Type:    Outgoing,
-					Message: line,
-				}, s)
+
+				go s.DispatchEvent(
+					Outgoing,
+					s,
+					line,
+				)
 			}
 
 		}
@@ -152,7 +154,10 @@ func (s *UnixSocket) Reconnect(delay time.Duration) {
 				ticker.Stop()
 				s.conn = c
 				s.Status = util.NewStatus()
-				go s.OnSocketEvent(&SocketEvent{Type: Open}, s)
+				go s.DispatchEvent(
+					Open,
+					s,
+				)
 				s.read()
 			}
 		}

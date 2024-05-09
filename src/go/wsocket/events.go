@@ -17,7 +17,6 @@ const (
 	Message Type = "message"
 )
 
-type Param interface{}
 type Payload []interface{}
 
 func (e Type) String() string {
@@ -49,6 +48,18 @@ func (d Direction) String() string {
 	return "out"
 }
 
-type Handler interface {
-	OnMessage(*Client, Direction, Type, ...interface{})
+type MessageEvent struct {
+	Client *Client
+	Type
+	Direction
+	Params []interface{}
+}
+
+func NewMessage(c *Client, d Direction, t Type, v ...interface{}) MessageEvent {
+	return MessageEvent{
+		Client:    c,
+		Direction: d,
+		Type:      t,
+		Params:    v,
+	}
 }

@@ -2,16 +2,10 @@ package main
 
 import (
 	"flirc/usocket"
-	"flirc/util"
 	"flirc/wsocket"
 )
 
 func main() {
-
-	logger.Info("keymaps=>%v", LoadKeymaps())
-
-	return
-	util.Initialize()
 
 	logger.Info(
 		"flags(port=>%v, socket=>%v, remote => %v, delay => %v, ping => %v)",
@@ -31,7 +25,6 @@ func main() {
 	s, ok := usocket.ConnectSocket(*socket, &flirc)
 	if ok {
 		flirc.Info("connected to %s", *socket)
-		util.AddEventHandler(&flirc)
 		go s.Run()
 	}
 

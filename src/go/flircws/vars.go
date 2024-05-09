@@ -23,6 +23,6 @@ var (
 	flirc    FlircHandler
 	logger   util.Logger
 	cfgDir   = "etc/flircd"
-	libDir   = "usr/local/lib/flircd"
-	ws       wsocket.WebSocket
+	// libDir   = "usr/local/lib/flircd"
+	ws wsocket.WebSocket
 )
