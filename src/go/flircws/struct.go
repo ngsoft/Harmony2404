@@ -1,8 +1,6 @@
 package main
 
 import (
-	"flirc/usocket"
-	"flirc/util"
 	"flirc/wsocket"
 	"fmt"
 )
@@ -20,21 +18,6 @@ func (s State) OK() bool {
 	return s == StateSuccess
 }
 
-type JsonResponse struct {
-	State   `json:"status"`
-	Message string `json:"statusMessage"`
-}
-
-type JsonResponseWithData struct {
-	*JsonResponse
-	Data interface{} `json:"result"`
-}
-
-type BaseEvent struct {
-	Type   string      `json:"type"`
-	Params interface{} `json:"params"`
-}
-
 type SocketMessage struct {
 	Message string
 	Code    string
@@ -50,18 +33,4 @@ func (h *SocketMessage) Export() []interface{} {
 		h.Key,
 		h.Repeat,
 	}
-}
-
-type Handler struct {
-	util.BaseHandler
-}
-
-type FlircHandler struct {
-	keymaps []Keymap
-	remote  string
-	delay   int
-	*usocket.UnixSocket
-	util.Logger
-	lock bool
-	Room *wsocket.Room
 }

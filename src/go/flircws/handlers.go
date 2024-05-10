@@ -3,8 +3,40 @@ package main
 import (
 	"flirc/usocket"
 	"flirc/util"
+	"flirc/wsocket"
 	"time"
 )
+
+type FlircHandler struct {
+	keymaps []Keymap
+	remote  string
+	delay   int
+	*usocket.UnixSocket
+	util.Logger
+	lock bool
+	Room *wsocket.Room
+}
+
+func (h *FlircHandler) OnMessage(m *wsocket.MessageEvent, next *wsocket.NextHandler) {
+
+	if m.Direction.IsIncoming() {
+
+		switch m.Type {
+		case GetInput:
+			h.Room.AddClient(m.Client)
+			m.Client.SendEvent(wsocket.Success, GetInput)
+			return
+		case GetKeymaps:
+			m.Client.SendEvent(wsocket.Success, GetKeymaps, h.keymaps)
+			return
+
+		}
+
+	}
+
+	next.OnMessage(m)
+
+}
 
 func (h *FlircHandler) OnEvent(ev *util.Event) {
 

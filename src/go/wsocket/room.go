@@ -9,7 +9,6 @@ type Room struct {
 	Name      string
 	Clients   map[*Client]bool
 	WebSocket *WebSocket
-	Handler   Handler
 }
 
 func (r *Room) AddClient(c *Client) {
@@ -20,7 +19,6 @@ func (r *Room) AddClient(c *Client) {
 		}
 		r.Clients[c] = true
 		c.CurrentRoom = r
-		c.SendEvent(Success, JoinRoom, r.Name)
 	}
 
 }
@@ -28,10 +26,6 @@ func (r *Room) AddClient(c *Client) {
 func (r *Room) RemoveClient(c *Client) {
 	c.CurrentRoom = nil
 	delete(r.Clients, c)
-}
-
-func (r *Room) SetHandler(h Handler) {
-	r.Handler = h
 }
 
 // SendEvent send event to everyone in the room

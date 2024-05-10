@@ -37,6 +37,10 @@ func main() {
 		Port: *wsPort,
 	}
 	flirc.Room = ws.AddRoom("remote")
+	ws.AddHandler(&flirc)
 
+	users := wsocket.InMemoryUserValidator{}
+	users.AddUsers(wsocket.NewUser("admin", "pwd"))
+	ws.AddHandler(wsocket.NewLoginHandler(&ws, 20, &users))
 	ws.Run()
 }

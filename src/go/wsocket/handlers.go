@@ -44,6 +44,7 @@ func (h *DefaultHandler) OnMessage(m *MessageEvent, next *NextHandler) {
 			if len(v) > 0 {
 				if room, ok = v[0].(string); ok {
 					ok = c.WebSocket.SwitchRoom(c, room)
+					c.SendEvent(Success, JoinRoom, room)
 				}
 			}
 
@@ -76,7 +77,7 @@ func (h *DefaultHandler) OnMessage(m *MessageEvent, next *NextHandler) {
 
 	}
 
-	// calling next middleware
+	// calling next middleware (if any)
 	next.OnMessage(m)
 
 }
