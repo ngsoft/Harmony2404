@@ -18,6 +18,7 @@ function sudo.install() {
 function session.detect() {
     if ! desktop.running; then return $COMMAND_FAILURE; fi
     if [ -z "$DISPLAY" ]; then
+        log "INFO: display server is not available for current session"
         local info user disp
         for info in $(who); do
             if [ -z "$user" ]; then
@@ -38,6 +39,7 @@ function session.detect() {
         if [ -z "$user" ] || [ -z "$disp" ]; then return $COMMAND_FAILURE; fi
         export SESSION_USER="$user"
         export DISPLAY="$disp"
+        log "INFO: found session user ${SESSION_USER}${DISPLAY}"
     fi
     return $COMMAND_SUCCESS
 }

@@ -105,11 +105,11 @@ flirc.capture() {
 
     if flirc.connected && session.detect; then
         if ids="$(flirc.ids)"; then
-            log "flirc device connected and desktop is running"
+            log "INFO: flirc device connected and desktop is running"
             for id in $ids; do
                 if @ sudo.execute xinput $mode $id; then
                     result=$COMMAND_SUCCESS
-                    log "flirc xinput device ${id} has been ${mode}d"
+                    log "INFO: flirc xinput device ${id} has been ${mode}d"
                     continue
                 fi
                 log "ERR: cannot ${mode} xinput device ${id}"
