@@ -43,13 +43,13 @@ func (h *DefaultHandler) OnMessage(m *MessageEvent, next *NextHandler) {
 		case JoinRoom:
 			if len(v) > 0 {
 				if room, ok = v[0].(string); ok {
-					ok = c.WebSocket.SwitchRoom(c, room)
-					c.SendEvent(Success, JoinRoom, room)
+					if ok = c.WebSocket.SwitchRoom(c, room); ok {
+						c.SendEvent(Success, JoinRoom, room)
+					}
 				}
 			}
-
 			if !ok {
-				c.SendEvent(Error, "invalid room "+room)
+				c.SendEvent(Error, JoinRoom, room)
 			}
 			return
 		case LeaveRoom:
@@ -59,7 +59,7 @@ func (h *DefaultHandler) OnMessage(m *MessageEvent, next *NextHandler) {
 				ok = c.CurrentRoom == nil
 			}
 			if !ok {
-				c.SendEvent(Error, "not in a room")
+				c.SendEvent(Error, LeaveRoom)
 				return
 			}
 			c.SendEvent(Success, LeaveRoom, room)
@@ -78,6 +78,7 @@ func (h *DefaultHandler) OnMessage(m *MessageEvent, next *NextHandler) {
 	}
 
 	// calling next middleware (if any)
+	// kept there if you want to rebuild the stack with a middleware before that one
 	next.OnMessage(m)
 
 }

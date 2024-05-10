@@ -6,8 +6,8 @@ func (t EventType) Is(tt EventType) bool {
 	return tt == t
 }
 
-func (e EventType) String() string {
-	return string(e)
+func (t EventType) String() string {
+	return string(t)
 }
 
 const (

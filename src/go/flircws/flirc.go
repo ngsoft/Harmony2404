@@ -8,9 +8,12 @@ import (
 
 // triggers
 const (
-	GetInput   wsocket.Type = "getInputEvents"
-	GetKeymaps wsocket.Type = "getKeymaps"
-	Input      wsocket.Type = "input"
+	GetInput     wsocket.Type = "getInputEvents"
+	GetKeymaps   wsocket.Type = "getKeymaps"
+	Input        wsocket.Type = "input"
+	Connected    wsocket.Type = "connected"
+	Disconnected wsocket.Type = "disconnected"
+	Status       wsocket.Type = "status"
 )
 
 type KeyPair struct {

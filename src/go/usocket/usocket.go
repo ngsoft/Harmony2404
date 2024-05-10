@@ -55,11 +55,11 @@ func (s *UnixSocket) Run() {
 		return
 	}
 	if s.On() {
+		s.init = true
 		go s.DispatchEvent(
 			Open,
 			s,
 		)
-		s.init = true
 		s.read()
 	}
 

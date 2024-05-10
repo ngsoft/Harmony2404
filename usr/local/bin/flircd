@@ -156,6 +156,12 @@ FlircWS.start() {
 
 # Traps
 function cleanup() {
+
+    if FlircWS.running; then
+        log "INFO: stopping Flirc WebSocket pid: $(FlircWS.pid)"
+        FlircWS.kill
+    fi
+
     if InputLirc.running; then
         log "INFO: stopping InputLIRC pid: $(InputLirc.pid)"
         InputLirc.kill
