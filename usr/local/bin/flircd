@@ -101,12 +101,16 @@ require daemon flirc desktop mkservice
 
 # InputLirc Daemon management
 new Daemon InputLirc inputlircd
+# WebSocket Daemon management
+new Daemon FlircWS flircws
 
 # Load InputLirc Config
 [ -f "$INPUTLIRC_CFG_FILE" ] || throw "${INPUTLIRC_CFG_FILE} does not exists."
 source "$INPUTLIRC_CFG_FILE"
 InputLirc[options]="-r $repeat -m $minimum_keycode -t $keymap_translations -n $device_name -x $remote_name -d $socket $extra"
 InputLirc[socket]="$socket"
+FlircWS[options]="--socket $socket --delay $repeat --remote $remote_name --port 9030"
+FlircWS[logs]="/var/log/flircws.log"
 unset -v repeat minimum_keycode keymap_translations device_name socket remote_name extra
 
 # Start wait for inputlircd to be loaded
@@ -127,6 +131,26 @@ InputLirc.start() {
         fi
     fi
     log "ERR: InputLIRC start failure"
+    return $COMMAND_FAILURE
+}
+
+# Start wait for FlircWS
+FlircWS.start() {
+    local _pid opts="${FlircWS[options]}" logs="${FlircWS[logs]}" proc="${FlircWS[process]}"
+    FlircWS.running && return $COMMAND_SUCCESS
+    log "INFO: Starting Flirc WebSocket"
+    # change cwd to find config files (systemd executes on /)
+    @ pushd "${FLIRC_ROOT}/bin"
+    ${FLIRC_ROOT}/bin/$proc $opts &>>$logs &
+    @ popd
+    if FlircWS.wait; then
+        _pid="$(FlircWS.pid)"
+        if [ -n "$_pid" ]; then
+            log "INFO: Flirc WebSocket start success pid: $_pid"
+            return $COMMAND_SUCCESS
+        fi
+    fi
+    log "ERR: Flirc WebSocket start failure"
     return $COMMAND_FAILURE
 }
 
@@ -198,9 +222,12 @@ function do.main() {
                     log "INFO: Flirc device is connected"
                     logged=0
                 fi
-                if InputLirc.start && [[ $capture == 0 ]]; then
-                    if flirc.capture; then
-                        capture=1
+                if InputLirc.start; then
+                    FlircWS.start
+                    if [[ $capture == 0 ]]; then
+                        if flirc.capture; then
+                            capture=1
+                        fi
                     fi
                 fi
             else

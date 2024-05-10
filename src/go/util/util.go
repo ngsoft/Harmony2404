@@ -37,7 +37,6 @@ func FindPath(dirName string) (string, bool) {
 	for dir != prev {
 		prev = dir
 		dir = filepath.Dir(dir)
-
 		pth = path.Join(dir, dirName)
 		if IsDir(pth) {
 			return pth, true
