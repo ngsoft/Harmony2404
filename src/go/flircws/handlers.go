@@ -8,7 +8,7 @@ import (
 )
 
 type FlircHandler struct {
-	keymaps []Keymap
+	keymaps []KeyPair
 	remote  string
 	delay   int
 	*usocket.UnixSocket
@@ -27,7 +27,11 @@ func (h *FlircHandler) OnMessage(m *wsocket.MessageEvent, next *wsocket.NextHand
 			m.Client.SendEvent(wsocket.Success, GetInput)
 			return
 		case GetKeymaps:
-			m.Client.SendEvent(wsocket.Success, GetKeymaps, h.keymaps)
+			lst := make([]interface{}, 0)
+			for _, k := range h.keymaps {
+				lst = append(lst, k.List())
+			}
+			m.Client.SendEvent(wsocket.Success, GetKeymaps, lst)
 			return
 
 		}
@@ -70,15 +74,17 @@ func (h *FlircHandler) OnEvent(ev *util.Event) {
 		h.Info("shutdown")
 		h.Close()
 	case usocket.Incoming:
-		if !h.lock {
-			h.lock = true
-			util.SetTimeout(func() {
-				h.lock = false
-			}, time.Duration(h.delay)*time.Millisecond)
+		if !h.lock && h.Room != nil {
 			h.Info(msg)
-			if h.Room != nil {
-				h.Room.SendEvent(Input, msg)
+			if ev, ok := NewInputEvent(msg); ok {
+				h.Info("%v", ev)
+				h.lock = true
+				util.SetTimeout(func() {
+					h.lock = false
+				}, time.Duration(h.delay)*time.Millisecond)
+				h.Room.SendEvent(Input, ev.KeyPair.List()...)
 			}
+
 		}
 	}
 }
