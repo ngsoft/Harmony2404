@@ -95,8 +95,6 @@ func (c *Client) reader() {
 					c.Error("cannot unmarshal=>%v", line)
 					return
 				}
-
-				c.Info("args: %v", args)
 				if tstr, ok = args[0].(string); ok {
 					t = Type(tstr)
 					v = make([]interface{}, 0)
@@ -130,6 +128,9 @@ func (c *Client) pingHandler() {
 			c.ok <- false
 		}
 	)
+	go func() {
+		c.ok <- true
+	}()
 
 	defer func() {
 		ticker.Stop()

@@ -60,6 +60,7 @@ func (s *WebSocket) __init() {
 		s.Middlewares[&DefaultHandler{}] = true
 		s.SetLoggerPrefix("[ws]")
 		s.AddEventHandler(s)
+		util.AddEventHandler(s)
 		http.Handle(s.Route, s)
 	}
 }
@@ -113,21 +114,29 @@ func (s *WebSocket) OnEvent(ev *util.Event) {
 		client *Client
 	)
 
-	if len(ev.Params) == 0 {
-		s.Error("event[%s] no client defined", ev.Type.String())
-		return
-	}
-	if client, ok = ev.Params[0].(*Client); !ok {
-		s.Error("event[%s] no client defined", ev.Type.String())
-		return
-	}
 	switch ev.Type {
-	case Open:
-		s.Info("new incoming connection from client[%v]", client.Uid)
+	case util.ShutdownEvent:
+		s.Info("received shutdown event")
+		for c := range s.Clients {
+			c.Close()
+		}
 
-	case Close:
+	case Open, Close:
+		if len(ev.Params) == 0 {
+			s.Error("event[%s] no client defined", ev.Type.String())
+			return
+		}
+		if client, ok = ev.Params[0].(*Client); !ok {
+			s.Error("event[%s] no client defined", ev.Type.String())
+			return
+		}
+		if ev.Type == Open {
+			s.Info("new incoming connection from client[%v]", client.Uid)
+			return
+		}
 		s.Info("closed connection for client[%v]", client.Uid)
 		s.RemoveClient(client)
+
 	}
 
 }
@@ -141,9 +150,6 @@ func (s *WebSocket) AddClient(c *websocket.Conn) *Client {
 		pong:      func() {},
 		ok:        make(chan bool),
 	}
-	go func() {
-		client.ok <- true
-	}()
 	client.Initialize()
 	s.Clients[&client] = true
 	return &client

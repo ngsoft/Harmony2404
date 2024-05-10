@@ -2,10 +2,13 @@ package main
 
 import (
 	"flirc/usocket"
+	"flirc/util"
 	"flirc/wsocket"
 )
 
 func main() {
+
+	util.Initialize()
 
 	logger.Info(
 		"flags(port=>%v, socket=>%v, remote => %v, delay => %v, ping => %v)",
