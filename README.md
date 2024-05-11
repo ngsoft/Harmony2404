@@ -31,20 +31,23 @@ git add .
 git commit -m ":tada: first commit"
 ```
 
-Then install the Lirc suite and disable their daemons (we use a custom binary of [inputlirc](https://github.com/gsliepen/inputlirc) to capture the virtual keyboard) and irexec to read from the socket and write to the pipe
-
-InputLirc source code is located at [lib/harmony/dist/inputlirc](./lib/harmony/dist/inputlirc)
-
+Some packages are required for the gui app to work, install them
 
 ```shell
-sudo apt install lirc lirc-x xdotool libcanberra-gtk-module libcanberra-gtk3-module evemu-tools
-for act in stop disable mask; do sudo systemctl $act lircd-setup; done
-for act in stop disable mask; do sudo systemctl $act lircd-uinput; done
-for act in stop disable mask; do sudo systemctl $act lircdm; done
-for act in stop disable mask; do sudo systemctl $act irexec; done
-for act in stop disable mask; do sudo systemctl $act lircd; done
-for act in stop disable mask; do sudo systemctl $act lircd.socket; done
+sudo apt install xdotool evemu-tools
 ```
+
+Some other packages can be installed if using gnome
+
+```shell
+sudo apt install libcanberra-gtk-module libcanberra-gtk3-module
+```
+
+
+
+
+
+
 
 Then install the service
 The package is auto installable on first execution
@@ -54,6 +57,11 @@ sudo /opt/harmony/usr/local/bin/flircd
 sudo systemctl daemon-reload
 sudo systemctl start flircd
 ```
+
+### InputLirc
+
+We use a custom binary of [inputlirc](https://github.com/gsliepen/inputlirc) to capture the virtual keyboard
+InputLirc source code is located at [lib/harmony/dist/inputlirc](./lib/harmony/dist/inputlirc)
 
 ### Logs
 
