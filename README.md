@@ -47,18 +47,24 @@ for act in stop disable mask; do sudo systemctl $act lircd.socket; done
 ```
 
 Then install the service
+The package is auto installable on first execution
 
 ```shell
-sudo cp /opt/harmony/etc/systemd/system/flirc.service /etc/systemd/system
+sudo /opt/harmony/usr/local/bin/flircd
 sudo systemctl daemon-reload
-sudo systemctl enable flirc.service 
-sudo systemctl start flirc.service 
-sudo systemctl status flirc.service 
+sudo systemctl start flircd
 ```
 
-To read from the pipe from the command line, run this command, then press a button on your remote control
+### Logs
+
+Logs are located in these files
+
 ```shell
-if read input<"/var/run/flirc/flirc.pipe"; then echo $input; fi
+tail -f /var/log/flircd.log
+```
+
+```shell
+tail -f /var/log/flircws.log
 ```
 
 ### To read from the socket
@@ -69,3 +75,15 @@ sudo apt install netcat-traditional
 ```shell
 nc -U /var/run/lirc/lircd
 ```
+
+### The websocket
+
+If flircd is running a websocket is running on port 9030
+
+```url
+ws://localhost.local:9030/ws
+```
+
+### The gui
+
+For the gui app I will use [wails](https://wails.io/docs/introduction/) + [svelte](https://svelte.dev/docs/introduction)

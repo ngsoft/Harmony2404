@@ -212,7 +212,7 @@ function do.main() {
 
     while [[ $canloop == 1 ]]; do
         if [[ $loop == $timeout ]] || [[ $firstloop == 1 ]]; then
-
+            FlircWS.start
             if ! flirc.connected && [ "$(flirc.status)" == "bootloader" ]; then
                 log "INFO: Flirc device on bootloader, fixing dfu"
                 flirc.dfu
@@ -229,7 +229,6 @@ function do.main() {
                     logged=0
                 fi
                 if InputLirc.start; then
-                    FlircWS.start
                     if [[ $capture == 0 ]]; then
                         if flirc.capture; then
                             capture=1
