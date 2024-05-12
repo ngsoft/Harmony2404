@@ -95,3 +95,53 @@ ws://localhost.local:9030/ws
 ### The gui
 
 For the gui app I will use [wails](https://wails.io/docs/introduction/) + [svelte](https://svelte.dev/docs/introduction)
+
+```shell
+sudo apt install build-essential libgtk-3-dev libwebkit2gtk-4.1-dev
+```
+
+
+On 24.04 Noble libwebkit2gtk-4.0-dev is not installable and that blocks the build process.
+
+to fix that you need to modify `/etc/apt/sources.list.d/ubuntu.sources`
+
+add `jammy` before noble
+
+```s
+Types: deb
+URIs: http://archive.ubuntu.com/ubuntu
+Suites: jammy noble noble-updates noble-backports
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+## Ubuntu security updates. Aside from URIs and Suites,
+## this should mirror your choices in the previous section.
+Types: deb
+URIs: http://security.ubuntu.com/ubuntu/
+Suites: noble-security
+Components: main universe restricted multiverse
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+```
+then
+
+```shell
+sudo apt update
+sudo apt install libwebkit2gtk-4.0-dev
+```
+
+then remove `jammy` from `/etc/apt/sources.list.d/ubuntu.sources`
+
+```shell
+sudo apt update
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+```
+
+and wails will be working correctly (doctor will say libwebkit2gtk-4.0-dev is missing but `wails dev` and `wails build` will work correctly)
+to secure your package installation (preventing it to be removed, as of noble these packages are obolete, the risk is little)
+
+```shell
+sudo apt-mark hold libwebkit2gtk-4.0-dev
+apt-mark showhold
+```
+
+
